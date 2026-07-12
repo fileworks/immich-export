@@ -1,6 +1,6 @@
 [project]
 name = "immich-export"
-version = "0.1.0"
+version = "0.0.1"
 description = "Export everything out of Immich — files plus albums, people, tags, descriptions — into a redundant, human-readable local folder tree."
 readme = "README.md"
 license = "MIT"
