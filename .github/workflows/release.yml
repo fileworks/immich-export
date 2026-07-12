@@ -16,11 +16,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      # semantic-release pushes a `chore(release):` version commit to main, which
+      # the branch ruleset blocks for GITHUB_TOKEN (it has no bypass — GitHub
+      # refuses to make the Actions app a bypass actor). SEMANTIC_RELEASE_TOKEN
+      # is a PAT that acts as an org owner, who does have an always-bypass.
       - name: Semantic release (version, tag, changelog, GitHub Release)
         id: semrel
         uses: python-semantic-release/python-semantic-release@v9
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - uses: astral-sh/setup-uv@v5
         if: steps.semrel.outputs.released == 'true'
