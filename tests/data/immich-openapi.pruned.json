@@ -1,0 +1,2742 @@
+{
+ "immich_version": "3.0.1",
+ "paths": {
+  "/activities": [
+   "get",
+   "post"
+  ],
+  "/activities/statistics": [
+   "get"
+  ],
+  "/activities/{id}": [
+   "delete"
+  ],
+  "/admin/auth/unlink-all": [
+   "post"
+  ],
+  "/admin/database-backups": [
+   "delete",
+   "get"
+  ],
+  "/admin/database-backups/start-restore": [
+   "post"
+  ],
+  "/admin/database-backups/upload": [
+   "post"
+  ],
+  "/admin/database-backups/{filename}": [
+   "get"
+  ],
+  "/admin/integrity/report": [
+   "get"
+  ],
+  "/admin/integrity/report/{id}": [
+   "delete"
+  ],
+  "/admin/integrity/report/{id}/file": [
+   "get"
+  ],
+  "/admin/integrity/report/{type}/csv": [
+   "get"
+  ],
+  "/admin/integrity/summary": [
+   "get"
+  ],
+  "/admin/maintenance": [
+   "post"
+  ],
+  "/admin/maintenance/detect-install": [
+   "get"
+  ],
+  "/admin/maintenance/login": [
+   "post"
+  ],
+  "/admin/maintenance/status": [
+   "get"
+  ],
+  "/admin/notifications": [
+   "post"
+  ],
+  "/admin/notifications/templates/{name}": [
+   "post"
+  ],
+  "/admin/notifications/test-email": [
+   "post"
+  ],
+  "/admin/users": [
+   "get",
+   "post"
+  ],
+  "/admin/users/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/admin/users/{id}/calendar-heatmap": [
+   "get"
+  ],
+  "/admin/users/{id}/preferences": [
+   "get",
+   "put"
+  ],
+  "/admin/users/{id}/restore": [
+   "post"
+  ],
+  "/admin/users/{id}/sessions": [
+   "get"
+  ],
+  "/admin/users/{id}/statistics": [
+   "get"
+  ],
+  "/albums": [
+   "get",
+   "post"
+  ],
+  "/albums/assets": [
+   "put"
+  ],
+  "/albums/statistics": [
+   "get"
+  ],
+  "/albums/{id}": [
+   "delete",
+   "get",
+   "patch"
+  ],
+  "/albums/{id}/assets": [
+   "delete",
+   "put"
+  ],
+  "/albums/{id}/map-markers": [
+   "get"
+  ],
+  "/albums/{id}/user/{userId}": [
+   "delete",
+   "put"
+  ],
+  "/albums/{id}/users": [
+   "put"
+  ],
+  "/api-keys": [
+   "get",
+   "post"
+  ],
+  "/api-keys/me": [
+   "get"
+  ],
+  "/api-keys/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/assets": [
+   "delete",
+   "post",
+   "put"
+  ],
+  "/assets/bulk-upload-check": [
+   "post"
+  ],
+  "/assets/copy": [
+   "put"
+  ],
+  "/assets/jobs": [
+   "post"
+  ],
+  "/assets/metadata": [
+   "delete",
+   "put"
+  ],
+  "/assets/statistics": [
+   "get"
+  ],
+  "/assets/{id}": [
+   "get",
+   "put"
+  ],
+  "/assets/{id}/edits": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/assets/{id}/metadata": [
+   "get",
+   "put"
+  ],
+  "/assets/{id}/metadata/{key}": [
+   "delete",
+   "get"
+  ],
+  "/assets/{id}/ocr": [
+   "get"
+  ],
+  "/assets/{id}/original": [
+   "get"
+  ],
+  "/assets/{id}/thumbnail": [
+   "get"
+  ],
+  "/assets/{id}/video/playback": [
+   "get"
+  ],
+  "/assets/{id}/video/stream/main.m3u8": [
+   "get"
+  ],
+  "/assets/{id}/video/stream/{sessionId}": [
+   "delete"
+  ],
+  "/assets/{id}/video/stream/{sessionId}/{variantIndex}/playlist.m3u8": [
+   "get"
+  ],
+  "/assets/{id}/video/stream/{sessionId}/{variantIndex}/{filename}": [
+   "get"
+  ],
+  "/auth/admin-sign-up": [
+   "post"
+  ],
+  "/auth/change-password": [
+   "post"
+  ],
+  "/auth/login": [
+   "post"
+  ],
+  "/auth/logout": [
+   "post"
+  ],
+  "/auth/pin-code": [
+   "delete",
+   "post",
+   "put"
+  ],
+  "/auth/session/lock": [
+   "post"
+  ],
+  "/auth/session/unlock": [
+   "post"
+  ],
+  "/auth/status": [
+   "get"
+  ],
+  "/auth/validateToken": [
+   "post"
+  ],
+  "/download/archive": [
+   "post"
+  ],
+  "/download/info": [
+   "post"
+  ],
+  "/duplicates": [
+   "delete",
+   "get"
+  ],
+  "/duplicates/resolve": [
+   "post"
+  ],
+  "/duplicates/{id}": [
+   "delete"
+  ],
+  "/faces": [
+   "get",
+   "post"
+  ],
+  "/faces/{id}": [
+   "delete",
+   "put"
+  ],
+  "/jobs": [
+   "get",
+   "post"
+  ],
+  "/jobs/{name}": [
+   "put"
+  ],
+  "/libraries": [
+   "get",
+   "post"
+  ],
+  "/libraries/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/libraries/{id}/scan": [
+   "post"
+  ],
+  "/libraries/{id}/statistics": [
+   "get"
+  ],
+  "/libraries/{id}/validate": [
+   "post"
+  ],
+  "/map/markers": [
+   "get"
+  ],
+  "/map/reverse-geocode": [
+   "get"
+  ],
+  "/memories": [
+   "get",
+   "post"
+  ],
+  "/memories/statistics": [
+   "get"
+  ],
+  "/memories/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/memories/{id}/assets": [
+   "delete",
+   "put"
+  ],
+  "/notifications": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/notifications/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/oauth/authorize": [
+   "post"
+  ],
+  "/oauth/backchannel-logout": [
+   "post"
+  ],
+  "/oauth/callback": [
+   "post"
+  ],
+  "/oauth/link": [
+   "post"
+  ],
+  "/oauth/mobile-redirect": [
+   "get"
+  ],
+  "/oauth/unlink": [
+   "post"
+  ],
+  "/partners": [
+   "get",
+   "post"
+  ],
+  "/partners/{id}": [
+   "delete",
+   "post",
+   "put"
+  ],
+  "/people": [
+   "delete",
+   "get",
+   "post",
+   "put"
+  ],
+  "/people/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/people/{id}/merge": [
+   "post"
+  ],
+  "/people/{id}/reassign": [
+   "put"
+  ],
+  "/people/{id}/statistics": [
+   "get"
+  ],
+  "/people/{id}/thumbnail": [
+   "get"
+  ],
+  "/plugins": [
+   "get"
+  ],
+  "/plugins/methods": [
+   "get"
+  ],
+  "/plugins/templates": [
+   "get"
+  ],
+  "/plugins/{id}": [
+   "get"
+  ],
+  "/queues": [
+   "get"
+  ],
+  "/queues/{name}": [
+   "get",
+   "put"
+  ],
+  "/queues/{name}/jobs": [
+   "delete",
+   "get"
+  ],
+  "/search/cities": [
+   "get"
+  ],
+  "/search/explore": [
+   "get"
+  ],
+  "/search/large-assets": [
+   "post"
+  ],
+  "/search/metadata": [
+   "post"
+  ],
+  "/search/person": [
+   "get"
+  ],
+  "/search/places": [
+   "get"
+  ],
+  "/search/random": [
+   "post"
+  ],
+  "/search/smart": [
+   "post"
+  ],
+  "/search/statistics": [
+   "post"
+  ],
+  "/search/suggestions": [
+   "get"
+  ],
+  "/server/about": [
+   "get"
+  ],
+  "/server/apk-links": [
+   "get"
+  ],
+  "/server/config": [
+   "get"
+  ],
+  "/server/features": [
+   "get"
+  ],
+  "/server/license": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/server/media-types": [
+   "get"
+  ],
+  "/server/ping": [
+   "get"
+  ],
+  "/server/statistics": [
+   "get"
+  ],
+  "/server/storage": [
+   "get"
+  ],
+  "/server/version": [
+   "get"
+  ],
+  "/server/version-check": [
+   "get"
+  ],
+  "/server/version-history": [
+   "get"
+  ],
+  "/sessions": [
+   "delete",
+   "get",
+   "post"
+  ],
+  "/sessions/{id}": [
+   "delete",
+   "put"
+  ],
+  "/sessions/{id}/lock": [
+   "post"
+  ],
+  "/shared-links": [
+   "get",
+   "post"
+  ],
+  "/shared-links/login": [
+   "post"
+  ],
+  "/shared-links/me": [
+   "get"
+  ],
+  "/shared-links/{id}": [
+   "delete",
+   "get",
+   "patch"
+  ],
+  "/shared-links/{id}/assets": [
+   "delete",
+   "put"
+  ],
+  "/stacks": [
+   "delete",
+   "get",
+   "post"
+  ],
+  "/stacks/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/stacks/{id}/assets/{assetId}": [
+   "delete"
+  ],
+  "/sync/ack": [
+   "delete",
+   "get",
+   "post"
+  ],
+  "/sync/stream": [
+   "post"
+  ],
+  "/system-config": [
+   "get",
+   "put"
+  ],
+  "/system-config/defaults": [
+   "get"
+  ],
+  "/system-config/storage-template-options": [
+   "get"
+  ],
+  "/system-metadata/admin-onboarding": [
+   "get",
+   "post"
+  ],
+  "/system-metadata/reverse-geocoding-state": [
+   "get"
+  ],
+  "/system-metadata/version-check-state": [
+   "get"
+  ],
+  "/tags": [
+   "get",
+   "post",
+   "put"
+  ],
+  "/tags/assets": [
+   "put"
+  ],
+  "/tags/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/tags/{id}/assets": [
+   "delete",
+   "put"
+  ],
+  "/timeline/bucket": [
+   "get"
+  ],
+  "/timeline/buckets": [
+   "get"
+  ],
+  "/trash/empty": [
+   "post"
+  ],
+  "/trash/restore": [
+   "post"
+  ],
+  "/trash/restore/assets": [
+   "post"
+  ],
+  "/users": [
+   "get"
+  ],
+  "/users/me": [
+   "get",
+   "put"
+  ],
+  "/users/me/calendar-heatmap": [
+   "get"
+  ],
+  "/users/me/license": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/users/me/onboarding": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/users/me/preferences": [
+   "get",
+   "put"
+  ],
+  "/users/profile-image": [
+   "delete",
+   "post"
+  ],
+  "/users/{id}": [
+   "get"
+  ],
+  "/users/{id}/profile-image": [
+   "get"
+  ],
+  "/view/folder": [
+   "get"
+  ],
+  "/view/folder/unique-paths": [
+   "get"
+  ],
+  "/workflows": [
+   "get",
+   "post"
+  ],
+  "/workflows/triggers": [
+   "get"
+  ],
+  "/workflows/{id}": [
+   "delete",
+   "get",
+   "put"
+  ],
+  "/workflows/{id}/share": [
+   "get"
+  ]
+ },
+ "schemas": {
+  "ActivityCreateDto": [
+   "albumId",
+   "assetId",
+   "comment",
+   "type"
+  ],
+  "ActivityResponseDto": [
+   "assetId",
+   "comment",
+   "createdAt",
+   "id",
+   "type",
+   "user"
+  ],
+  "ActivityStatisticsResponseDto": [
+   "comments",
+   "likes"
+  ],
+  "AddUsersDto": [
+   "albumUsers"
+  ],
+  "AdminOnboardingUpdateDto": [
+   "isOnboarded"
+  ],
+  "AlbumResponseDto": [
+   "albumName",
+   "albumThumbnailAssetId",
+   "albumUsers",
+   "assetCount",
+   "contributorCounts",
+   "createdAt",
+   "description",
+   "endDate",
+   "hasSharedLink",
+   "id",
+   "isActivityEnabled",
+   "lastModifiedAssetTimestamp",
+   "order",
+   "shared",
+   "startDate",
+   "updatedAt"
+  ],
+  "AlbumStatisticsResponseDto": [
+   "notShared",
+   "owned",
+   "shared"
+  ],
+  "AlbumUserAddDto": [
+   "role",
+   "userId"
+  ],
+  "AlbumUserCreateDto": [
+   "role",
+   "userId"
+  ],
+  "AlbumUserResponseDto": [
+   "role",
+   "user"
+  ],
+  "AlbumUserRole": [],
+  "AlbumsAddAssetsDto": [
+   "albumIds",
+   "assetIds"
+  ],
+  "AlbumsAddAssetsResponseDto": [
+   "error",
+   "success"
+  ],
+  "AlbumsResponse": [
+   "defaultAssetOrder"
+  ],
+  "AlbumsUpdate": [
+   "defaultAssetOrder"
+  ],
+  "ApiKeyCreateDto": [
+   "name",
+   "permissions"
+  ],
+  "ApiKeyCreateResponseDto": [
+   "apiKey",
+   "secret"
+  ],
+  "ApiKeyResponseDto": [
+   "createdAt",
+   "id",
+   "name",
+   "permissions",
+   "updatedAt"
+  ],
+  "ApiKeyUpdateDto": [
+   "name",
+   "permissions"
+  ],
+  "AssetBulkDeleteDto": [
+   "force",
+   "ids"
+  ],
+  "AssetBulkUpdateDto": [
+   "dateTimeOriginal",
+   "dateTimeRelative",
+   "description",
+   "duplicateId",
+   "ids",
+   "isFavorite",
+   "latitude",
+   "longitude",
+   "rating",
+   "timeZone",
+   "visibility"
+  ],
+  "AssetBulkUploadCheckDto": [
+   "assets"
+  ],
+  "AssetBulkUploadCheckItem": [
+   "checksum",
+   "id"
+  ],
+  "AssetBulkUploadCheckResponseDto": [
+   "results"
+  ],
+  "AssetBulkUploadCheckResult": [
+   "action",
+   "assetId",
+   "id",
+   "isTrashed",
+   "reason"
+  ],
+  "AssetCopyDto": [
+   "albums",
+   "favorite",
+   "sharedLinks",
+   "sidecar",
+   "sourceId",
+   "stack",
+   "targetId"
+  ],
+  "AssetEditAction": [],
+  "AssetEditActionItemDto": [
+   "action",
+   "parameters"
+  ],
+  "AssetEditActionItemResponseDto": [
+   "action",
+   "id",
+   "parameters"
+  ],
+  "AssetEditsCreateDto": [
+   "edits"
+  ],
+  "AssetEditsResponseDto": [
+   "assetId",
+   "edits"
+  ],
+  "AssetFaceCreateDto": [
+   "assetId",
+   "height",
+   "imageHeight",
+   "imageWidth",
+   "personId",
+   "width",
+   "x",
+   "y"
+  ],
+  "AssetFaceDeleteDto": [
+   "force"
+  ],
+  "AssetFaceResponseDto": [
+   "boundingBoxX1",
+   "boundingBoxX2",
+   "boundingBoxY1",
+   "boundingBoxY2",
+   "id",
+   "imageHeight",
+   "imageWidth",
+   "person",
+   "sourceType"
+  ],
+  "AssetFaceUpdateDto": [
+   "data"
+  ],
+  "AssetFaceUpdateItem": [
+   "assetId",
+   "personId"
+  ],
+  "AssetIdErrorReason": [],
+  "AssetIdsDto": [
+   "assetIds"
+  ],
+  "AssetIdsResponseDto": [
+   "assetId",
+   "error",
+   "success"
+  ],
+  "AssetJobName": [],
+  "AssetJobsDto": [
+   "assetIds",
+   "name"
+  ],
+  "AssetMediaCreateDto": [
+   "assetData",
+   "duration",
+   "fileCreatedAt",
+   "fileModifiedAt",
+   "filename",
+   "isFavorite",
+   "livePhotoVideoId",
+   "metadata",
+   "sidecarData",
+   "visibility"
+  ],
+  "AssetMediaResponseDto": [
+   "id",
+   "status"
+  ],
+  "AssetMediaSize": [],
+  "AssetMediaStatus": [],
+  "AssetMetadataBulkDeleteDto": [
+   "items"
+  ],
+  "AssetMetadataBulkDeleteItemDto": [
+   "assetId",
+   "key"
+  ],
+  "AssetMetadataBulkResponseDto": [
+   "assetId",
+   "key",
+   "updatedAt",
+   "value"
+  ],
+  "AssetMetadataBulkUpsertDto": [
+   "items"
+  ],
+  "AssetMetadataBulkUpsertItemDto": [
+   "assetId",
+   "key",
+   "value"
+  ],
+  "AssetMetadataResponseDto": [
+   "key",
+   "updatedAt",
+   "value"
+  ],
+  "AssetMetadataUpsertDto": [
+   "items"
+  ],
+  "AssetMetadataUpsertItemDto": [
+   "key",
+   "value"
+  ],
+  "AssetOcrResponseDto": [
+   "assetId",
+   "boxScore",
+   "id",
+   "text",
+   "textScore",
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "y1",
+   "y2",
+   "y3",
+   "y4"
+  ],
+  "AssetOrder": [],
+  "AssetOrderBy": [],
+  "AssetRejectReason": [],
+  "AssetResponseDto": [
+   "checksum",
+   "createdAt",
+   "duplicateId",
+   "duration",
+   "exifInfo",
+   "fileCreatedAt",
+   "fileModifiedAt",
+   "hasMetadata",
+   "height",
+   "id",
+   "isArchived",
+   "isEdited",
+   "isFavorite",
+   "isOffline",
+   "isTrashed",
+   "libraryId",
+   "livePhotoVideoId",
+   "localDateTime",
+   "originalFileName",
+   "originalMimeType",
+   "originalPath",
+   "owner",
+   "ownerId",
+   "people",
+   "resized",
+   "stack",
+   "tags",
+   "thumbhash",
+   "type",
+   "updatedAt",
+   "visibility",
+   "width"
+  ],
+  "AssetStackResponseDto": [
+   "assetCount",
+   "id",
+   "primaryAssetId"
+  ],
+  "AssetStatsResponseDto": [
+   "images",
+   "total",
+   "videos"
+  ],
+  "AssetTypeEnum": [],
+  "AssetUploadAction": [],
+  "AssetVisibility": [],
+  "AudioCodec": [],
+  "AuthStatusResponseDto": [
+   "expiresAt",
+   "isElevated",
+   "password",
+   "pinCode",
+   "pinExpiresAt"
+  ],
+  "AvatarUpdate": [
+   "color"
+  ],
+  "BulkIdErrorReason": [],
+  "BulkIdResponseDto": [
+   "error",
+   "errorMessage",
+   "id",
+   "success"
+  ],
+  "BulkIdsDto": [
+   "ids"
+  ],
+  "CLIPConfig": [
+   "enabled",
+   "modelName"
+  ],
+  "CQMode": [],
+  "CalendarHeatmapResponseDto": [
+   "from",
+   "series",
+   "to",
+   "totalCount"
+  ],
+  "CalendarHeatmapType": [],
+  "CastResponse": [
+   "gCastEnabled"
+  ],
+  "CastUpdate": [
+   "gCastEnabled"
+  ],
+  "ChangePasswordDto": [
+   "invalidateSessions",
+   "newPassword",
+   "password"
+  ],
+  "Colorspace": [],
+  "ContributorCountResponseDto": [
+   "assetCount",
+   "userId"
+  ],
+  "CreateAlbumDto": [
+   "albumName",
+   "albumUsers",
+   "assetIds",
+   "description"
+  ],
+  "CreateLibraryDto": [
+   "exclusionPatterns",
+   "importPaths",
+   "name",
+   "ownerId"
+  ],
+  "CreateProfileImageDto": [
+   "file"
+  ],
+  "CreateProfileImageResponseDto": [
+   "profileChangedAt",
+   "profileImagePath",
+   "userId"
+  ],
+  "CropParameters": [
+   "height",
+   "width",
+   "x",
+   "y"
+  ],
+  "DatabaseBackupConfig": [
+   "cronExpression",
+   "enabled",
+   "keepLastAmount"
+  ],
+  "DatabaseBackupDeleteDto": [
+   "backups"
+  ],
+  "DatabaseBackupDto": [
+   "filename",
+   "filesize",
+   "timezone"
+  ],
+  "DatabaseBackupListResponseDto": [
+   "backups"
+  ],
+  "DatabaseBackupUploadDto": [
+   "file"
+  ],
+  "DownloadArchiveDto": [
+   "assetIds",
+   "edited"
+  ],
+  "DownloadArchiveInfo": [
+   "assetIds",
+   "size"
+  ],
+  "DownloadInfoDto": [
+   "albumId",
+   "archiveSize",
+   "assetIds",
+   "userId"
+  ],
+  "DownloadResponse": [
+   "archiveSize",
+   "includeEmbeddedVideos"
+  ],
+  "DownloadResponseDto": [
+   "archives",
+   "totalSize"
+  ],
+  "DownloadUpdate": [
+   "archiveSize",
+   "includeEmbeddedVideos"
+  ],
+  "DuplicateDetectionConfig": [
+   "enabled",
+   "maxDistance"
+  ],
+  "DuplicateResolveDto": [
+   "groups"
+  ],
+  "DuplicateResolveGroupDto": [
+   "duplicateId",
+   "keepAssetIds",
+   "trashAssetIds"
+  ],
+  "DuplicateResponseDto": [
+   "assets",
+   "duplicateId",
+   "suggestedKeepAssetIds"
+  ],
+  "EmailNotificationsResponse": [
+   "albumInvite",
+   "albumUpdate",
+   "enabled"
+  ],
+  "EmailNotificationsUpdate": [
+   "albumInvite",
+   "albumUpdate",
+   "enabled"
+  ],
+  "ExifResponseDto": [
+   "city",
+   "country",
+   "dateTimeOriginal",
+   "description",
+   "exifImageHeight",
+   "exifImageWidth",
+   "exposureTime",
+   "fNumber",
+   "fileSizeInByte",
+   "focalLength",
+   "iso",
+   "latitude",
+   "lensModel",
+   "longitude",
+   "make",
+   "model",
+   "modifyDate",
+   "orientation",
+   "projectionType",
+   "rating",
+   "state",
+   "timeZone"
+  ],
+  "FaceDto": [
+   "id"
+  ],
+  "FacialRecognitionConfig": [
+   "enabled",
+   "maxDistance",
+   "minFaces",
+   "minScore",
+   "modelName"
+  ],
+  "FoldersResponse": [
+   "enabled",
+   "sidebarWeb"
+  ],
+  "FoldersUpdate": [
+   "enabled",
+   "sidebarWeb"
+  ],
+  "ImageFormat": [],
+  "IntegrityReport": [],
+  "IntegrityReportResponseDto": [
+   "items",
+   "nextCursor"
+  ],
+  "IntegrityReportSummaryResponseDto": [
+   "checksum_mismatch",
+   "missing_file",
+   "untracked_file"
+  ],
+  "JobCreateDto": [
+   "name"
+  ],
+  "JobName": [],
+  "JobSettingsDto": [
+   "concurrency"
+  ],
+  "LibraryResponseDto": [
+   "assetCount",
+   "createdAt",
+   "exclusionPatterns",
+   "id",
+   "importPaths",
+   "name",
+   "ownerId",
+   "refreshedAt",
+   "updatedAt"
+  ],
+  "LibraryStatsResponseDto": [
+   "photos",
+   "total",
+   "usage",
+   "videos"
+  ],
+  "LicenseKeyDto": [
+   "activationKey",
+   "licenseKey"
+  ],
+  "LicenseResponseDto": [],
+  "LogLevel": [],
+  "LoginCredentialDto": [
+   "email",
+   "password"
+  ],
+  "LoginResponseDto": [
+   "accessToken",
+   "isAdmin",
+   "isOnboarded",
+   "name",
+   "profileImagePath",
+   "shouldChangePassword",
+   "userEmail",
+   "userId"
+  ],
+  "LogoutResponseDto": [
+   "redirectUri",
+   "successful"
+  ],
+  "MachineLearningAvailabilityChecksDto": [
+   "enabled",
+   "interval",
+   "timeout"
+  ],
+  "MaintenanceAction": [],
+  "MaintenanceAuthDto": [
+   "username"
+  ],
+  "MaintenanceDetectInstallResponseDto": [
+   "storage"
+  ],
+  "MaintenanceDetectInstallStorageFolderDto": [
+   "files",
+   "folder",
+   "readable",
+   "writable"
+  ],
+  "MaintenanceLoginDto": [
+   "token"
+  ],
+  "MaintenanceStatusResponseDto": [
+   "action",
+   "active",
+   "error",
+   "progress",
+   "task"
+  ],
+  "ManualJobName": [],
+  "MapMarkerResponseDto": [
+   "city",
+   "country",
+   "id",
+   "lat",
+   "lon",
+   "state"
+  ],
+  "MapReverseGeocodeResponseDto": [
+   "city",
+   "country",
+   "state"
+  ],
+  "MemoriesResponse": [
+   "duration",
+   "enabled"
+  ],
+  "MemoriesUpdate": [
+   "duration",
+   "enabled"
+  ],
+  "MemoryCreateDto": [
+   "assetIds",
+   "data",
+   "hideAt",
+   "isSaved",
+   "memoryAt",
+   "seenAt",
+   "showAt",
+   "type"
+  ],
+  "MemoryResponseDto": [
+   "assets",
+   "createdAt",
+   "data",
+   "deletedAt",
+   "hideAt",
+   "id",
+   "isSaved",
+   "memoryAt",
+   "ownerId",
+   "seenAt",
+   "showAt",
+   "type",
+   "updatedAt"
+  ],
+  "MemorySearchOrder": [],
+  "MemoryStatisticsResponseDto": [
+   "total"
+  ],
+  "MemoryType": [],
+  "MemoryUpdateDto": [
+   "isSaved",
+   "memoryAt",
+   "seenAt"
+  ],
+  "MergePersonDto": [
+   "ids"
+  ],
+  "MetadataSearchDto": [
+   "albumIds",
+   "checksum",
+   "city",
+   "country",
+   "createdAfter",
+   "createdBefore",
+   "description",
+   "encodedVideoPath",
+   "id",
+   "isEncoded",
+   "isFavorite",
+   "isMotion",
+   "isNotInAlbum",
+   "isOffline",
+   "lensModel",
+   "libraryId",
+   "make",
+   "model",
+   "ocr",
+   "order",
+   "originalFileName",
+   "originalPath",
+   "page",
+   "personIds",
+   "previewPath",
+   "rating",
+   "size",
+   "state",
+   "tagIds",
+   "takenAfter",
+   "takenBefore",
+   "thumbnailPath",
+   "trashedAfter",
+   "trashedBefore",
+   "type",
+   "updatedAfter",
+   "updatedBefore",
+   "visibility",
+   "withDeleted",
+   "withExif",
+   "withPeople",
+   "withStacked"
+  ],
+  "MirrorAxis": [],
+  "MirrorParameters": [
+   "axis"
+  ],
+  "NotificationCreateDto": [
+   "data",
+   "description",
+   "level",
+   "readAt",
+   "title",
+   "type",
+   "userId"
+  ],
+  "NotificationDeleteAllDto": [
+   "ids"
+  ],
+  "NotificationDto": [
+   "createdAt",
+   "data",
+   "description",
+   "id",
+   "level",
+   "readAt",
+   "title",
+   "type"
+  ],
+  "NotificationLevel": [],
+  "NotificationType": [],
+  "NotificationUpdateAllDto": [
+   "ids",
+   "readAt"
+  ],
+  "NotificationUpdateDto": [
+   "readAt"
+  ],
+  "OAuthAuthorizeResponseDto": [
+   "url"
+  ],
+  "OAuthBackchannelLogoutDto": [
+   "logout_token"
+  ],
+  "OAuthCallbackDto": [
+   "codeVerifier",
+   "state",
+   "url"
+  ],
+  "OAuthConfigDto": [
+   "codeChallenge",
+   "redirectUri",
+   "state"
+  ],
+  "OAuthTokenEndpointAuthMethod": [],
+  "OcrConfig": [
+   "enabled",
+   "maxResolution",
+   "minDetectionScore",
+   "minRecognitionScore",
+   "modelName"
+  ],
+  "OnThisDayDto": [
+   "year"
+  ],
+  "OnboardingDto": [
+   "isOnboarded"
+  ],
+  "OnboardingResponseDto": [
+   "isOnboarded"
+  ],
+  "PartnerCreateDto": [
+   "sharedWithId"
+  ],
+  "PartnerDirection": [],
+  "PartnerResponseDto": [
+   "avatarColor",
+   "email",
+   "id",
+   "inTimeline",
+   "name",
+   "profileChangedAt",
+   "profileImagePath"
+  ],
+  "PartnerUpdateDto": [
+   "inTimeline"
+  ],
+  "PeopleResponse": [
+   "enabled",
+   "minimumFaces",
+   "sidebarWeb"
+  ],
+  "PeopleResponseDto": [
+   "hasNextPage",
+   "hidden",
+   "people",
+   "total"
+  ],
+  "PeopleUpdate": [
+   "enabled",
+   "minimumFaces",
+   "sidebarWeb"
+  ],
+  "PeopleUpdateDto": [
+   "people"
+  ],
+  "PeopleUpdateItem": [
+   "birthDate",
+   "color",
+   "featureFaceAssetId",
+   "id",
+   "isFavorite",
+   "isHidden",
+   "name"
+  ],
+  "Permission": [],
+  "PersonCreateDto": [
+   "birthDate",
+   "color",
+   "isFavorite",
+   "isHidden",
+   "name"
+  ],
+  "PersonResponseDto": [
+   "birthDate",
+   "color",
+   "id",
+   "isFavorite",
+   "isHidden",
+   "name",
+   "thumbnailPath",
+   "updatedAt"
+  ],
+  "PersonStatisticsResponseDto": [
+   "assets"
+  ],
+  "PersonUpdateDto": [
+   "birthDate",
+   "color",
+   "featureFaceAssetId",
+   "isFavorite",
+   "isHidden",
+   "name"
+  ],
+  "PinCodeChangeDto": [
+   "newPinCode",
+   "password",
+   "pinCode"
+  ],
+  "PinCodeResetDto": [
+   "password",
+   "pinCode"
+  ],
+  "PinCodeSetupDto": [
+   "pinCode"
+  ],
+  "PlacesResponseDto": [
+   "admin1name",
+   "admin2name",
+   "latitude",
+   "longitude",
+   "name"
+  ],
+  "PluginMethodResponseDto": [
+   "description",
+   "hostFunctions",
+   "key",
+   "name",
+   "schema",
+   "title",
+   "types",
+   "uiHints"
+  ],
+  "PluginResponseDto": [
+   "author",
+   "createdAt",
+   "description",
+   "id",
+   "methods",
+   "name",
+   "title",
+   "updatedAt",
+   "version"
+  ],
+  "PluginTemplateResponseDto": [
+   "description",
+   "key",
+   "steps",
+   "title",
+   "trigger",
+   "uiHints"
+  ],
+  "PluginTemplateStepResponseDto": [
+   "config",
+   "enabled",
+   "method"
+  ],
+  "PurchaseResponse": [
+   "hideBuyButtonUntil",
+   "showSupportBadge"
+  ],
+  "PurchaseUpdate": [
+   "hideBuyButtonUntil",
+   "showSupportBadge"
+  ],
+  "QueueCommand": [],
+  "QueueCommandDto": [
+   "command",
+   "force"
+  ],
+  "QueueDeleteDto": [
+   "failed"
+  ],
+  "QueueJobResponseDto": [
+   "data",
+   "id",
+   "name",
+   "timestamp"
+  ],
+  "QueueJobStatus": [],
+  "QueueName": [],
+  "QueueResponseDto": [
+   "isPaused",
+   "name",
+   "statistics"
+  ],
+  "QueueResponseLegacyDto": [
+   "jobCounts",
+   "queueStatus"
+  ],
+  "QueueStatisticsDto": [
+   "active",
+   "completed",
+   "delayed",
+   "failed",
+   "paused",
+   "waiting"
+  ],
+  "QueueStatusLegacyDto": [
+   "isActive",
+   "isPaused"
+  ],
+  "QueueUpdateDto": [
+   "isPaused"
+  ],
+  "QueuesResponseLegacyDto": [
+   "backgroundTask",
+   "backupDatabase",
+   "duplicateDetection",
+   "editor",
+   "faceDetection",
+   "facialRecognition",
+   "integrityCheck",
+   "library",
+   "metadataExtraction",
+   "migration",
+   "notifications",
+   "ocr",
+   "search",
+   "sidecar",
+   "smartSearch",
+   "storageTemplateMigration",
+   "thumbnailGeneration",
+   "videoConversion",
+   "workflow"
+  ],
+  "RandomSearchDto": [
+   "albumIds",
+   "city",
+   "country",
+   "createdAfter",
+   "createdBefore",
+   "isEncoded",
+   "isFavorite",
+   "isMotion",
+   "isNotInAlbum",
+   "isOffline",
+   "lensModel",
+   "libraryId",
+   "make",
+   "model",
+   "ocr",
+   "personIds",
+   "rating",
+   "size",
+   "state",
+   "tagIds",
+   "takenAfter",
+   "takenBefore",
+   "trashedAfter",
+   "trashedBefore",
+   "type",
+   "updatedAfter",
+   "updatedBefore",
+   "visibility",
+   "withDeleted",
+   "withExif",
+   "withPeople",
+   "withStacked"
+  ],
+  "RatingsResponse": [
+   "enabled"
+  ],
+  "RatingsUpdate": [
+   "enabled"
+  ],
+  "ReactionLevel": [],
+  "ReactionType": [],
+  "RecentlyAddedResponse": [
+   "sidebarWeb"
+  ],
+  "RecentlyAddedUpdate": [
+   "sidebarWeb"
+  ],
+  "ReleaseChannel": [],
+  "ReleaseEventV1": [
+   "checkedAt",
+   "isAvailable",
+   "releaseVersion",
+   "serverVersion",
+   "type"
+  ],
+  "ReleaseType": [],
+  "ReverseGeocodingStateResponseDto": [
+   "lastImportFileName",
+   "lastUpdate"
+  ],
+  "RotateParameters": [
+   "angle"
+  ],
+  "SearchAlbumResponseDto": [
+   "count",
+   "facets",
+   "items",
+   "total"
+  ],
+  "SearchAssetResponseDto": [
+   "count",
+   "facets",
+   "items",
+   "nextPage",
+   "total"
+  ],
+  "SearchExploreItem": [
+   "data",
+   "value"
+  ],
+  "SearchExploreResponseDto": [
+   "fieldName",
+   "items"
+  ],
+  "SearchFacetCountResponseDto": [
+   "count",
+   "value"
+  ],
+  "SearchFacetResponseDto": [
+   "counts",
+   "fieldName"
+  ],
+  "SearchResponseDto": [
+   "albums",
+   "assets"
+  ],
+  "SearchStatisticsResponseDto": [
+   "total"
+  ],
+  "SearchSuggestionType": [],
+  "ServerAboutResponseDto": [
+   "build",
+   "buildImage",
+   "buildImageUrl",
+   "buildUrl",
+   "exiftool",
+   "ffmpeg",
+   "imagemagick",
+   "libvips",
+   "licensed",
+   "nodejs",
+   "repository",
+   "repositoryUrl",
+   "sourceCommit",
+   "sourceRef",
+   "sourceUrl",
+   "thirdPartyBugFeatureUrl",
+   "thirdPartyDocumentationUrl",
+   "thirdPartySourceUrl",
+   "thirdPartySupportUrl",
+   "version",
+   "versionUrl"
+  ],
+  "ServerApkLinksDto": [
+   "arm64v8a",
+   "armeabiv7a",
+   "universal",
+   "x86_64"
+  ],
+  "ServerConfigDto": [
+   "externalDomain",
+   "isInitialized",
+   "isOnboarded",
+   "loginPageMessage",
+   "maintenanceMode",
+   "mapDarkStyleUrl",
+   "mapLightStyleUrl",
+   "minFaces",
+   "oauthButtonText",
+   "publicUsers",
+   "trashDays",
+   "userDeleteDelay"
+  ],
+  "ServerFeaturesDto": [
+   "configFile",
+   "duplicateDetection",
+   "email",
+   "facialRecognition",
+   "importFaces",
+   "map",
+   "oauth",
+   "oauthAutoLaunch",
+   "ocr",
+   "passwordLogin",
+   "realtimeTranscoding",
+   "reverseGeocoding",
+   "search",
+   "sidecar",
+   "smartSearch",
+   "trash"
+  ],
+  "ServerMediaTypesResponseDto": [
+   "image",
+   "sidecar",
+   "video"
+  ],
+  "ServerPingResponse": [
+   "res"
+  ],
+  "ServerStatsResponseDto": [
+   "photos",
+   "usage",
+   "usageByUser",
+   "usagePhotos",
+   "usageVideos",
+   "videos"
+  ],
+  "ServerStorageResponseDto": [
+   "diskAvailable",
+   "diskAvailableRaw",
+   "diskSize",
+   "diskSizeRaw",
+   "diskUsagePercentage",
+   "diskUse",
+   "diskUseRaw"
+  ],
+  "ServerVersionHistoryResponseDto": [
+   "createdAt",
+   "id",
+   "version"
+  ],
+  "ServerVersionResponseDto": [
+   "major",
+   "minor",
+   "patch",
+   "prerelease"
+  ],
+  "SessionCreateDto": [
+   "deviceOS",
+   "deviceType",
+   "duration"
+  ],
+  "SessionCreateResponseDto": [
+   "appVersion",
+   "createdAt",
+   "current",
+   "deviceOS",
+   "deviceType",
+   "expiresAt",
+   "id",
+   "isPendingSyncReset",
+   "token",
+   "updatedAt"
+  ],
+  "SessionResponseDto": [
+   "appVersion",
+   "createdAt",
+   "current",
+   "deviceOS",
+   "deviceType",
+   "expiresAt",
+   "id",
+   "isPendingSyncReset",
+   "updatedAt"
+  ],
+  "SessionUnlockDto": [
+   "password",
+   "pinCode"
+  ],
+  "SessionUpdateDto": [
+   "isPendingSyncReset"
+  ],
+  "SetMaintenanceModeDto": [
+   "action",
+   "restoreBackupFilename"
+  ],
+  "SharedLinkCreateDto": [
+   "albumId",
+   "allowDownload",
+   "allowUpload",
+   "assetIds",
+   "description",
+   "expiresAt",
+   "password",
+   "showMetadata",
+   "slug",
+   "type"
+  ],
+  "SharedLinkEditDto": [
+   "allowDownload",
+   "allowUpload",
+   "description",
+   "expiresAt",
+   "password",
+   "showMetadata",
+   "slug"
+  ],
+  "SharedLinkLoginDto": [
+   "password"
+  ],
+  "SharedLinkResponseDto": [
+   "album",
+   "allowDownload",
+   "allowUpload",
+   "assets",
+   "createdAt",
+   "description",
+   "expiresAt",
+   "id",
+   "key",
+   "password",
+   "showMetadata",
+   "slug",
+   "type",
+   "userId"
+  ],
+  "SharedLinkType": [],
+  "SharedLinksResponse": [
+   "enabled",
+   "sidebarWeb"
+  ],
+  "SharedLinksUpdate": [
+   "enabled",
+   "sidebarWeb"
+  ],
+  "SignUpDto": [
+   "email",
+   "name",
+   "password"
+  ],
+  "SmartSearchDto": [
+   "albumIds",
+   "city",
+   "country",
+   "createdAfter",
+   "createdBefore",
+   "isEncoded",
+   "isFavorite",
+   "isMotion",
+   "isNotInAlbum",
+   "isOffline",
+   "language",
+   "lensModel",
+   "libraryId",
+   "make",
+   "model",
+   "ocr",
+   "page",
+   "personIds",
+   "query",
+   "queryAssetId",
+   "rating",
+   "size",
+   "state",
+   "tagIds",
+   "takenAfter",
+   "takenBefore",
+   "trashedAfter",
+   "trashedBefore",
+   "type",
+   "updatedAfter",
+   "updatedBefore",
+   "visibility",
+   "withDeleted",
+   "withExif"
+  ],
+  "SourceType": [],
+  "StackCreateDto": [
+   "assetIds"
+  ],
+  "StackResponseDto": [
+   "assets",
+   "id",
+   "primaryAssetId"
+  ],
+  "StackUpdateDto": [
+   "primaryAssetId"
+  ],
+  "StatisticsSearchDto": [
+   "albumIds",
+   "city",
+   "country",
+   "createdAfter",
+   "createdBefore",
+   "description",
+   "isEncoded",
+   "isFavorite",
+   "isMotion",
+   "isNotInAlbum",
+   "isOffline",
+   "lensModel",
+   "libraryId",
+   "make",
+   "model",
+   "ocr",
+   "personIds",
+   "rating",
+   "state",
+   "tagIds",
+   "takenAfter",
+   "takenBefore",
+   "trashedAfter",
+   "trashedBefore",
+   "type",
+   "updatedAfter",
+   "updatedBefore",
+   "visibility"
+  ],
+  "StorageFolder": [],
+  "SyncAckDeleteDto": [
+   "types"
+  ],
+  "SyncAckDto": [
+   "ack",
+   "type"
+  ],
+  "SyncAckSetDto": [
+   "acks"
+  ],
+  "SyncAckV1": [],
+  "SyncAlbumDeleteV1": [
+   "albumId"
+  ],
+  "SyncAlbumToAssetDeleteV1": [
+   "albumId",
+   "assetId"
+  ],
+  "SyncAlbumToAssetV1": [
+   "albumId",
+   "assetId"
+  ],
+  "SyncAlbumUserDeleteV1": [
+   "albumId",
+   "userId"
+  ],
+  "SyncAlbumUserV1": [
+   "albumId",
+   "role",
+   "userId"
+  ],
+  "SyncAlbumV1": [
+   "createdAt",
+   "description",
+   "id",
+   "isActivityEnabled",
+   "name",
+   "order",
+   "ownerId",
+   "thumbnailAssetId",
+   "updatedAt"
+  ],
+  "SyncAlbumV2": [
+   "createdAt",
+   "description",
+   "id",
+   "isActivityEnabled",
+   "name",
+   "order",
+   "thumbnailAssetId",
+   "updatedAt"
+  ],
+  "SyncAssetDeleteV1": [
+   "assetId"
+  ],
+  "SyncAssetEditDeleteV1": [
+   "editId"
+  ],
+  "SyncAssetEditV1": [
+   "action",
+   "assetId",
+   "id",
+   "parameters",
+   "sequence"
+  ],
+  "SyncAssetExifV1": [
+   "assetId",
+   "city",
+   "country",
+   "dateTimeOriginal",
+   "description",
+   "exifImageHeight",
+   "exifImageWidth",
+   "exposureTime",
+   "fNumber",
+   "fileSizeInByte",
+   "focalLength",
+   "fps",
+   "iso",
+   "latitude",
+   "lensModel",
+   "longitude",
+   "make",
+   "model",
+   "modifyDate",
+   "orientation",
+   "profileDescription",
+   "projectionType",
+   "rating",
+   "state",
+   "timeZone"
+  ],
+  "SyncAssetFaceDeleteV1": [
+   "assetFaceId"
+  ],
+  "SyncAssetFaceV1": [
+   "assetId",
+   "boundingBoxX1",
+   "boundingBoxX2",
+   "boundingBoxY1",
+   "boundingBoxY2",
+   "id",
+   "imageHeight",
+   "imageWidth",
+   "personId",
+   "sourceType"
+  ],
+  "SyncAssetFaceV2": [
+   "assetId",
+   "boundingBoxX1",
+   "boundingBoxX2",
+   "boundingBoxY1",
+   "boundingBoxY2",
+   "deletedAt",
+   "id",
+   "imageHeight",
+   "imageWidth",
+   "isVisible",
+   "personId",
+   "sourceType"
+  ],
+  "SyncAssetMetadataDeleteV1": [
+   "assetId",
+   "key"
+  ],
+  "SyncAssetMetadataV1": [
+   "assetId",
+   "key",
+   "value"
+  ],
+  "SyncAssetOcrDeleteV1": [
+   "assetId",
+   "deletedAt",
+   "id"
+  ],
+  "SyncAssetOcrV1": [
+   "assetId",
+   "boxScore",
+   "id",
+   "isVisible",
+   "text",
+   "textScore",
+   "x1",
+   "x2",
+   "x3",
+   "x4",
+   "y1",
+   "y2",
+   "y3",
+   "y4"
+  ],
+  "SyncAssetV1": [
+   "checksum",
+   "createdAt",
+   "deletedAt",
+   "duration",
+   "fileCreatedAt",
+   "fileModifiedAt",
+   "height",
+   "id",
+   "isEdited",
+   "isFavorite",
+   "libraryId",
+   "livePhotoVideoId",
+   "localDateTime",
+   "originalFileName",
+   "ownerId",
+   "stackId",
+   "thumbhash",
+   "type",
+   "visibility",
+   "width"
+  ],
+  "SyncAssetV2": [
+   "checksum",
+   "createdAt",
+   "deletedAt",
+   "duration",
+   "fileCreatedAt",
+   "fileModifiedAt",
+   "height",
+   "id",
+   "isEdited",
+   "isFavorite",
+   "libraryId",
+   "livePhotoVideoId",
+   "localDateTime",
+   "originalFileName",
+   "ownerId",
+   "stackId",
+   "thumbhash",
+   "type",
+   "visibility",
+   "width"
+  ],
+  "SyncAuthUserV1": [
+   "avatarColor",
+   "deletedAt",
+   "email",
+   "hasProfileImage",
+   "id",
+   "isAdmin",
+   "name",
+   "oauthId",
+   "pinCode",
+   "profileChangedAt",
+   "quotaSizeInBytes",
+   "quotaUsageInBytes",
+   "storageLabel"
+  ],
+  "SyncCompleteV1": [],
+  "SyncEntityType": [],
+  "SyncMemoryAssetDeleteV1": [
+   "assetId",
+   "memoryId"
+  ],
+  "SyncMemoryAssetV1": [
+   "assetId",
+   "memoryId"
+  ],
+  "SyncMemoryDeleteV1": [
+   "memoryId"
+  ],
+  "SyncMemoryV1": [
+   "createdAt",
+   "data",
+   "deletedAt",
+   "hideAt",
+   "id",
+   "isSaved",
+   "memoryAt",
+   "ownerId",
+   "seenAt",
+   "showAt",
+   "type",
+   "updatedAt"
+  ],
+  "SyncPartnerDeleteV1": [
+   "sharedById",
+   "sharedWithId"
+  ],
+  "SyncPartnerV1": [
+   "inTimeline",
+   "sharedById",
+   "sharedWithId"
+  ],
+  "SyncPersonDeleteV1": [
+   "personId"
+  ],
+  "SyncPersonV1": [
+   "birthDate",
+   "color",
+   "createdAt",
+   "faceAssetId",
+   "id",
+   "isFavorite",
+   "isHidden",
+   "name",
+   "ownerId",
+   "updatedAt"
+  ],
+  "SyncRequestType": [],
+  "SyncResetV1": [],
+  "SyncStackDeleteV1": [
+   "stackId"
+  ],
+  "SyncStackV1": [
+   "createdAt",
+   "id",
+   "ownerId",
+   "primaryAssetId",
+   "updatedAt"
+  ],
+  "SyncStreamDto": [
+   "reset",
+   "types"
+  ],
+  "SyncUserDeleteV1": [
+   "userId"
+  ],
+  "SyncUserMetadataDeleteV1": [
+   "key",
+   "userId"
+  ],
+  "SyncUserMetadataV1": [
+   "key",
+   "userId",
+   "value"
+  ],
+  "SyncUserV1": [
+   "avatarColor",
+   "deletedAt",
+   "email",
+   "hasProfileImage",
+   "id",
+   "name",
+   "profileChangedAt"
+  ],
+  "SystemConfigBackupsDto": [
+   "database"
+  ],
+  "SystemConfigDto": [
+   "backup",
+   "ffmpeg",
+   "image",
+   "integrityChecks",
+   "job",
+   "library",
+   "logging",
+   "machineLearning",
+   "map",
+   "metadata",
+   "newVersionCheck",
+   "nightlyTasks",
+   "notifications",
+   "oauth",
+   "passwordLogin",
+   "reverseGeocoding",
+   "server",
+   "storageTemplate",
+   "templates",
+   "theme",
+   "trash",
+   "user"
+  ],
+  "SystemConfigFFmpegDto": [
+   "accel",
+   "accelDecode",
+   "acceptedAudioCodecs",
+   "acceptedContainers",
+   "acceptedVideoCodecs",
+   "bframes",
+   "cqMode",
+   "crf",
+   "gopSize",
+   "maxBitrate",
+   "preferredHwDevice",
+   "preset",
+   "realtime",
+   "refs",
+   "targetAudioCodec",
+   "targetResolution",
+   "targetVideoCodec",
+   "temporalAQ",
+   "threads",
+   "tonemap",
+   "transcode",
+   "twoPass"
+  ],
+  "SystemConfigFFmpegRealtimeDto": [
+   "enabled"
+  ],
+  "SystemConfigFacesDto": [
+   "import"
+  ],
+  "SystemConfigGeneratedFullsizeImageDto": [
+   "enabled",
+   "format",
+   "progressive",
+   "quality"
+  ],
+  "SystemConfigGeneratedImageDto": [
+   "format",
+   "progressive",
+   "quality",
+   "size"
+  ],
+  "SystemConfigImageDto": [
+   "colorspace",
+   "extractEmbedded",
+   "fullsize",
+   "preview",
+   "thumbnail"
+  ],
+  "SystemConfigIntegrityChecks": [
+   "checksumFiles",
+   "missingFiles",
+   "untrackedFiles"
+  ],
+  "SystemConfigIntegrityChecksumJob": [
+   "cronExpression",
+   "enabled",
+   "percentageLimit",
+   "timeLimit"
+  ],
+  "SystemConfigIntegrityJob": [
+   "cronExpression",
+   "enabled"
+  ],
+  "SystemConfigJobDto": [
+   "backgroundTask",
+   "editor",
+   "faceDetection",
+   "integrityCheck",
+   "library",
+   "metadataExtraction",
+   "migration",
+   "notifications",
+   "ocr",
+   "search",
+   "sidecar",
+   "smartSearch",
+   "thumbnailGeneration",
+   "videoConversion",
+   "workflow"
+  ],
+  "SystemConfigLibraryDto": [
+   "scan",
+   "watch"
+  ],
+  "SystemConfigLibraryScanDto": [
+   "cronExpression",
+   "enabled"
+  ],
+  "SystemConfigLibraryWatchDto": [
+   "enabled"
+  ],
+  "SystemConfigLoggingDto": [
+   "enabled",
+   "level"
+  ],
+  "SystemConfigMachineLearningDto": [
+   "availabilityChecks",
+   "clip",
+   "duplicateDetection",
+   "enabled",
+   "facialRecognition",
+   "ocr",
+   "urls"
+  ],
+  "SystemConfigMapDto": [
+   "darkStyle",
+   "enabled",
+   "lightStyle"
+  ],
+  "SystemConfigMetadataDto": [
+   "faces"
+  ],
+  "SystemConfigNewVersionCheckDto": [
+   "channel",
+   "enabled"
+  ],
+  "SystemConfigNightlyTasksDto": [
+   "clusterNewFaces",
+   "databaseCleanup",
+   "generateMemories",
+   "missingThumbnails",
+   "startTime",
+   "syncQuotaUsage"
+  ],
+  "SystemConfigNotificationsDto": [
+   "smtp"
+  ],
+  "SystemConfigOAuthDto": [
+   "allowInsecureRequests",
+   "autoLaunch",
+   "autoRegister",
+   "buttonText",
+   "clientId",
+   "clientSecret",
+   "defaultStorageQuota",
+   "enabled",
+   "endSessionEndpoint",
+   "issuerUrl",
+   "mobileOverrideEnabled",
+   "mobileRedirectUri",
+   "profileSigningAlgorithm",
+   "prompt",
+   "roleClaim",
+   "scope",
+   "signingAlgorithm",
+   "storageLabelClaim",
+   "storageQuotaClaim",
+   "timeout",
+   "tokenEndpointAuthMethod"
+  ],
+  "SystemConfigPasswordLoginDto": [
+   "enabled"
+  ],
+  "SystemConfigReverseGeocodingDto": [
+   "enabled"
+  ],
+  "SystemConfigServerDto": [
+   "externalDomain",
+   "loginPageMessage",
+   "publicUsers"
+  ],
+  "SystemConfigSmtpDto": [
+   "enabled",
+   "from",
+   "replyTo",
+   "transport"
+  ],
+  "SystemConfigSmtpTransportDto": [
+   "host",
+   "ignoreCert",
+   "password",
+   "port",
+   "secure",
+   "username"
+  ],
+  "SystemConfigStorageTemplateDto": [
+   "enabled",
+   "hashVerificationEnabled",
+   "template"
+  ],
+  "SystemConfigTemplateEmailsDto": [
+   "albumInviteTemplate",
+   "albumUpdateTemplate",
+   "welcomeTemplate"
+  ],
+  "SystemConfigTemplateStorageOptionDto": [
+   "dayOptions",
+   "hourOptions",
+   "minuteOptions",
+   "monthOptions",
+   "presetOptions",
+   "secondOptions",
+   "weekOptions",
+   "yearOptions"
+  ],
+  "SystemConfigTemplatesDto": [
+   "email"
+  ],
+  "SystemConfigThemeDto": [
+   "customCss"
+  ],
+  "SystemConfigTrashDto": [
+   "days",
+   "enabled"
+  ],
+  "SystemConfigUserDto": [
+   "deleteDelay"
+  ],
+  "TagBulkAssetsDto": [
+   "assetIds",
+   "tagIds"
+  ],
+  "TagBulkAssetsResponseDto": [
+   "count"
+  ],
+  "TagCreateDto": [
+   "color",
+   "name",
+   "parentId"
+  ],
+  "TagResponseDto": [
+   "color",
+   "createdAt",
+   "id",
+   "name",
+   "parentId",
+   "updatedAt",
+   "value"
+  ],
+  "TagUpdateDto": [
+   "color"
+  ],
+  "TagUpsertDto": [
+   "tags"
+  ],
+  "TagsResponse": [
+   "enabled",
+   "sidebarWeb"
+  ],
+  "TagsUpdate": [
+   "enabled",
+   "sidebarWeb"
+  ],
+  "TemplateDto": [
+   "template"
+  ],
+  "TemplateResponseDto": [
+   "html",
+   "name"
+  ],
+  "TestEmailResponseDto": [
+   "messageId"
+  ],
+  "TimeBucketAssetResponseDto": [
+   "city",
+   "country",
+   "createdAt",
+   "duration",
+   "fileCreatedAt",
+   "id",
+   "isFavorite",
+   "isImage",
+   "isTrashed",
+   "latitude",
+   "livePhotoVideoId",
+   "localOffsetHours",
+   "longitude",
+   "ownerId",
+   "projectionType",
+   "ratio",
+   "stack",
+   "thumbhash",
+   "visibility"
+  ],
+  "TimeBucketsResponseDto": [
+   "count",
+   "timeBucket"
+  ],
+  "ToneMapping": [],
+  "TranscodeHWAccel": [],
+  "TranscodePolicy": [],
+  "TrashResponseDto": [
+   "count"
+  ],
+  "UpdateAlbumDto": [
+   "albumName",
+   "albumThumbnailAssetId",
+   "description",
+   "isActivityEnabled",
+   "order"
+  ],
+  "UpdateAlbumUserDto": [
+   "role"
+  ],
+  "UpdateAssetDto": [
+   "dateTimeOriginal",
+   "description",
+   "isFavorite",
+   "latitude",
+   "livePhotoVideoId",
+   "longitude",
+   "rating",
+   "visibility"
+  ],
+  "UpdateLibraryDto": [
+   "exclusionPatterns",
+   "importPaths",
+   "name"
+  ],
+  "UsageByUserDto": [
+   "photos",
+   "quotaSizeInBytes",
+   "usage",
+   "usagePhotos",
+   "usageVideos",
+   "userId",
+   "userName",
+   "videos"
+  ],
+  "UserAdminCreateDto": [
+   "avatarColor",
+   "email",
+   "isAdmin",
+   "name",
+   "notify",
+   "password",
+   "pinCode",
+   "quotaSizeInBytes",
+   "shouldChangePassword",
+   "storageLabel"
+  ],
+  "UserAdminDeleteDto": [
+   "force"
+  ],
+  "UserAdminResponseDto": [
+   "avatarColor",
+   "createdAt",
+   "deletedAt",
+   "email",
+   "id",
+   "isAdmin",
+   "license",
+   "name",
+   "oauthId",
+   "profileChangedAt",
+   "profileImagePath",
+   "quotaSizeInBytes",
+   "quotaUsageInBytes",
+   "shouldChangePassword",
+   "status",
+   "storageLabel",
+   "updatedAt"
+  ],
+  "UserAdminUpdateDto": [
+   "avatarColor",
+   "email",
+   "isAdmin",
+   "name",
+   "password",
+   "pinCode",
+   "quotaSizeInBytes",
+   "shouldChangePassword",
+   "storageLabel"
+  ],
+  "UserAvatarColor": [],
+  "UserLicense": [
+   "activatedAt",
+   "activationKey",
+   "licenseKey"
+  ],
+  "UserMetadataKey": [],
+  "UserPreferencesResponseDto": [
+   "albums",
+   "cast",
+   "download",
+   "emailNotifications",
+   "folders",
+   "memories",
+   "people",
+   "purchase",
+   "ratings",
+   "recentlyAdded",
+   "sharedLinks",
+   "tags"
+  ],
+  "UserPreferencesUpdateDto": [
+   "albums",
+   "avatar",
+   "cast",
+   "download",
+   "emailNotifications",
+   "folders",
+   "memories",
+   "people",
+   "purchase",
+   "ratings",
+   "recentlyAdded",
+   "sharedLinks",
+   "tags"
+  ],
+  "UserResponseDto": [
+   "avatarColor",
+   "email",
+   "id",
+   "name",
+   "profileChangedAt",
+   "profileImagePath"
+  ],
+  "UserStatus": [],
+  "UserUpdateMeDto": [
+   "avatarColor",
+   "email",
+   "name",
+   "password"
+  ],
+  "ValidateAccessTokenResponseDto": [
+   "authStatus"
+  ],
+  "ValidateLibraryDto": [
+   "exclusionPatterns",
+   "importPaths"
+  ],
+  "ValidateLibraryImportPathResponseDto": [
+   "importPath",
+   "isValid",
+   "message"
+  ],
+  "ValidateLibraryResponseDto": [
+   "importPaths"
+  ],
+  "VersionCheckStateResponseDto": [
+   "checkedAt",
+   "releaseVersion"
+  ],
+  "VideoCodec": [],
+  "VideoContainer": [],
+  "WorkflowCreateDto": [
+   "description",
+   "enabled",
+   "name",
+   "steps",
+   "trigger"
+  ],
+  "WorkflowResponseDto": [
+   "createdAt",
+   "description",
+   "enabled",
+   "id",
+   "name",
+   "steps",
+   "trigger",
+   "updatedAt"
+  ],
+  "WorkflowShareResponseDto": [
+   "description",
+   "name",
+   "steps",
+   "trigger"
+  ],
+  "WorkflowShareStepDto": [
+   "config",
+   "enabled",
+   "method"
+  ],
+  "WorkflowStepDto": [
+   "config",
+   "enabled",
+   "method"
+  ],
+  "WorkflowTrigger": [],
+  "WorkflowTriggerResponseDto": [
+   "trigger",
+   "types"
+  ],
+  "WorkflowType": [],
+  "WorkflowUpdateDto": [
+   "description",
+   "enabled",
+   "name",
+   "steps",
+   "trigger"
+  ]
+ }
+}

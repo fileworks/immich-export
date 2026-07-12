@@ -1,0 +1,80 @@
+[project]
+name = "immich-export"
+version = "0.1.0"
+description = "Export everything out of Immich — files plus albums, people, tags, descriptions — into a redundant, human-readable local folder tree."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "gykonik" }]
+requires-python = ">=3.12"
+keywords = ["immich", "export", "backup", "photos", "xmp"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: System :: Archiving :: Backup",
+]
+dependencies = [
+  "httpx>=0.28",
+  "pydantic>=2.9",
+  "typer>=0.15",
+]
+
+[project.urls]
+Repository = "https://github.com/fileworks/immich-export"
+Issues = "https://github.com/fileworks/immich-export/issues"
+
+[project.scripts]
+immich-export = "immich_export.cli:app"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.13",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "respx>=0.22",
+  "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/immich_export"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PTH", "RET", "ARG"]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest fixtures are frequently used only for their side effect
+"tests/**" = ["ARG001"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests", "scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["src/immich_export/__init__.py:__version__"]
+commit_message = "chore(release): {version} [skip ci]"
+build_command = "python -m pip install uv && uv build"
+allow_zero_version = true
+
+[tool.semantic_release.branches.main]
+match = "main"
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"

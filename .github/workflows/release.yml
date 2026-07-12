@@ -1,0 +1,43 @@
+name: release
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # tag + GitHub Release
+  id-token: write # PyPI Trusted Publishing (OIDC, no token)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    concurrency: release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Semantic release (version, tag, changelog, GitHub Release)
+        id: semrel
+        uses: python-semantic-release/python-semantic-release@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: astral-sh/setup-uv@v5
+        if: steps.semrel.outputs.released == 'true'
+
+      - name: Build sdist + wheel
+        if: steps.semrel.outputs.released == 'true'
+        run: uv build
+
+      - name: Publish to PyPI (OIDC)
+        if: steps.semrel.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Bump Homebrew formula
+        if: steps.semrel.outputs.released == 'true'
+        run: |
+          gh workflow run bump.yml -R fileworks/homebrew-tap \
+            -f formula=immich-export \
+            -f version=${{ steps.semrel.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.TAP_DISPATCH_TOKEN }}
