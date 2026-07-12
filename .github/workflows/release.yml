@@ -12,14 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: release
     steps:
+      # `git push` authenticates with the credentials checkout persists into the
+      # remote's extraheader — NOT with the token handed to the semantic-release
+      # action below (that one only signs GitHub API calls). The version commit
+      # lands on protected `main`, so the pushing identity needs a ruleset bypass:
+      # SEMANTIC_RELEASE_TOKEN is a PAT acting as an org owner, who has one.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      # semantic-release pushes a `chore(release):` version commit to main, which
-      # the branch ruleset blocks for GITHUB_TOKEN (it has no bypass — GitHub
-      # refuses to make the Actions app a bypass actor). SEMANTIC_RELEASE_TOKEN
-      # is a PAT that acts as an org owner, who does have an always-bypass.
       - name: Semantic release (version, tag, changelog, GitHub Release)
         id: semrel
         uses: python-semantic-release/python-semantic-release@v9
