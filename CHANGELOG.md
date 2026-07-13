@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v0.0.3 (2026-07-13)
+
+### Bug Fixes
+
+- **release**: Attach the sdist and wheel to the GitHub Release
+  ([#4](https://github.com/fileworks/immich-export/pull/4),
+  [`34bb701`](https://github.com/fileworks/immich-export/commit/34bb701f727c42ac626f974a9d1665be58f79b59))
+
+The semantic-release action only runs 'version' — it bumps, tags, writes the changelog and creates
+  the GitHub Release, but it never runs 'publish'. So every Release was created with no files
+  attached: a bare tag pointing at PyPI.
+
+Upload the sdist and wheel that semantic-release already built, so the Release stands on its own.
+  That matters for a tool whose whole purpose is to be an escape hatch — you should be able to grab
+  it from GitHub without going through a package index.
+
+Uses the preinstalled gh CLI rather than another action, so the org's Actions allow-list does not
+  need a new entry.
+
+
 ## v0.0.2 (2026-07-13)
 
 ### Bug Fixes
@@ -23,11 +43,6 @@ Publish to PyPI and the Homebrew bump are both gated on that step, so a permissi
 
 Remove the duplicate build and the setup-uv step that only served it, and let the publish action
   consume the dist/ that semantic-release produced.
-
-
-## v0.0.1 (2026-07-12)
-
-### Bug Fixes
 
 - **release**: Give checkout the release token so the version push is allowed
   ([#2](https://github.com/fileworks/immich-export/pull/2),
