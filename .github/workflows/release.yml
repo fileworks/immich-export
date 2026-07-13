@@ -29,13 +29,11 @@ jobs:
         with:
           github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: astral-sh/setup-uv@v5
-        if: steps.semrel.outputs.released == 'true'
-
-      - name: Build sdist + wheel
-        if: steps.semrel.outputs.released == 'true'
-        run: uv build
-
+      # No build step here on purpose. python-semantic-release already builds the
+      # sdist + wheel into dist/ via its `build_command` in pyproject.toml. It is
+      # a Docker action running as root, so those files are root-owned; a second
+      # `uv build` as the unprivileged runner user cannot overwrite them and dies
+      # with PermissionError, taking publish and the brew bump down with it.
       - name: Publish to PyPI (OIDC)
         if: steps.semrel.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
