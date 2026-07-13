@@ -38,6 +38,16 @@ jobs:
         if: steps.semrel.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
 
+      # The semantic-release action only runs `version` (bump/tag/changelog/Release);
+      # it never runs `publish`, so the GitHub Release was created with no files
+      # attached. Upload the sdist + wheel it already built, so the Release is a
+      # usable artefact on its own and not just a pointer to PyPI.
+      - name: Attach the sdist + wheel to the GitHub Release
+        if: steps.semrel.outputs.released == 'true'
+        run: gh release upload "v${{ steps.semrel.outputs.version }}" dist/* --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Bump Homebrew formula
         if: steps.semrel.outputs.released == 'true'
         run: |
