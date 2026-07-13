@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.0.2 (2026-07-13)
+
+### Bug Fixes
+
+- **release**: Drop the duplicate build that broke publishing
+  ([#3](https://github.com/fileworks/immich-export/pull/3),
+  [`2f8683b`](https://github.com/fileworks/immich-export/commit/2f8683b21f8b0b75ffa0e6805547e450af394896))
+
+The release job died at 'Build sdist + wheel' with
+
+PermissionError: [Errno 13] Permission denied: dist/<pkg>-0.0.1.tar.gz
+
+python-semantic-release already builds the sdist and wheel into dist/ via the build_command in
+  pyproject.toml. It is a Docker action running as root, so those artefacts are root-owned. The
+  workflow then ran a second, redundant 'uv build' as the unprivileged runner user, which cannot
+  overwrite them.
+
+Publish to PyPI and the Homebrew bump are both gated on that step, so a permission error on a build
+  that never needed to happen silently took out the entire release.
+
+Remove the duplicate build and the setup-uv step that only served it, and let the publish action
+  consume the dist/ that semantic-release produced.
+
+
 ## v0.0.1 (2026-07-12)
 
 ### Bug Fixes
