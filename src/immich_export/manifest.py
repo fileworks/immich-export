@@ -9,12 +9,15 @@ the in-flight asset.
 from __future__ import annotations
 
 import csv
+import logging
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 class ManifestEntry(BaseModel):
@@ -57,17 +60,41 @@ CSV_COLUMNS = [
 ]
 
 
-def load_index(manifest_path: Path) -> dict[str, ManifestEntry]:
-    """Latest manifest entry per asset id; empty dict if no manifest yet."""
+def load_index(
+    manifest_path: Path, *, warnings: list[str] | None = None
+) -> dict[str, ManifestEntry]:
+    """Latest manifest entry per asset id; empty dict if no manifest yet.
+
+    A run killed mid-write (or a full disk) leaves a truncated final line. That
+    must not poison every future run, so an unparseable line is skipped and
+    reported — the assets it described are simply re-exported.
+    """
     index: dict[str, ManifestEntry] = {}
     if not manifest_path.is_file():
         return index
+    damaged = 0
     with manifest_path.open(encoding="utf-8") as fh:
-        for line in fh:
+        for number, line in enumerate(fh, start=1):
             line = line.strip()
-            if line:
+            if not line:
+                continue
+            try:
                 entry = ManifestEntry.model_validate_json(line)
-                index[entry.asset_id] = entry
+            except ValidationError:
+                damaged += 1
+                logger.warning(
+                    "%s line %d is unreadable (truncated by an interrupted run?) — "
+                    "skipping it; any assets it covered will be exported again.",
+                    manifest_path,
+                    number,
+                )
+                continue
+            index[entry.asset_id] = entry
+    if damaged and warnings is not None:
+        warnings.append(
+            f"{manifest_path.name}: skipped {damaged} unreadable line(s); "
+            "the assets they covered were re-exported."
+        )
     return index
 
 
