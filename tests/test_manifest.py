@@ -59,3 +59,39 @@ def test_write_csv_dedupes_and_orders(tmp_path: Path) -> None:
     assert [row["path"] for row in parsed] == ["library/2019/04/a.jpg", "library/2024/03/b.jpg"]
     assert parsed[0]["checksum"] == "new="
     assert parsed[0]["people"] == "Anna"
+
+
+class TestDamagedManifest:
+    """A run killed mid-write leaves a truncated line; resume must survive it."""
+
+    def test_truncated_final_line_is_skipped_not_fatal(self, tmp_path: Path) -> None:
+        manifest = tmp_path / "manifest.jsonl"
+        with ManifestWriter(manifest) as writer:
+            writer.append(_entry("a1"))
+        with manifest.open("a", encoding="utf-8") as fh:
+            fh.write('{"asset_id":"a2","checksum":"y","pa')  # killed mid-write
+
+        warnings: list[str] = []
+        index = load_index(manifest, warnings=warnings)
+
+        assert list(index) == ["a1"]  # the good entry still resumes
+        assert len(warnings) == 1
+        assert "unreadable" in warnings[0]
+
+    def test_intact_manifest_reports_no_warnings(self, tmp_path: Path) -> None:
+        manifest = tmp_path / "manifest.jsonl"
+        with ManifestWriter(manifest) as writer:
+            writer.append(_entry("a1"))
+
+        warnings: list[str] = []
+        assert list(load_index(manifest, warnings=warnings)) == ["a1"]
+        assert warnings == []
+
+    def test_write_csv_tolerates_a_damaged_line(self, tmp_path: Path) -> None:
+        manifest = tmp_path / "manifest.jsonl"
+        with ManifestWriter(manifest) as writer:
+            writer.append(_entry("a1"))
+        with manifest.open("a", encoding="utf-8") as fh:
+            fh.write("{not json at all\n")
+
+        assert write_csv(manifest, tmp_path / "manifest.csv") == 1
