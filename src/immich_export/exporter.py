@@ -15,6 +15,7 @@ from .errors import ImmichExportError, OutputError, ServerUnreachableError
 from .layout import compute_relative_path, disambiguate
 from .manifest import ManifestEntry, ManifestWriter, load_index, write_csv
 from .models import Asset
+from .progress import Progress
 from .report import ExportReport
 from .sidecar import write_sidecar
 from .views import build_view
@@ -107,28 +108,54 @@ class _AssetMeta:
 
 
 class _Runner:
-    def __init__(self, cfg: ExportConfig, client: ImmichClient, report: ExportReport) -> None:
+    def __init__(
+        self,
+        cfg: ExportConfig,
+        client: ImmichClient,
+        report: ExportReport,
+        progress: Progress,
+    ) -> None:
         self.cfg = cfg
         self.client = client
         self.report = report
+        self.progress = progress
         self.asset_albums: dict[str, list[str]] = {}
         self.asset_tags: dict[str, set[str]] = {}
         self.media_base = (
             cfg.library_root if cfg.mode is ExportMode.SIDECAR and cfg.library_root else cfg.out
         )
         self.manifest_path = cfg.out / MANIFEST_JSONL
-        self.index = load_index(self.manifest_path) if cfg.resume else {}
+        self.index = load_index(self.manifest_path, warnings=report.warnings) if cfg.resume else {}
         # Every relative path handed out so far (this run + previous runs).
         self.assigned: dict[str, str] = {e.path: e.asset_id for e in self.index.values()}
         self.semaphore = asyncio.Semaphore(cfg.concurrency)
 
     async def load_memberships(self) -> None:
-        for album in await self.client.list_albums():
-            for asset_id in await self.client.search_asset_ids(album_id=album.id):
-                self.asset_albums.setdefault(asset_id, []).append(album.album_name)
-        for tag in await self.client.list_tags():
-            for asset_id in await self.client.search_asset_ids(tag_id=tag.id):
-                self.asset_tags.setdefault(asset_id, set()).add(tag.value)
+        """Index album and tag membership up front.
+
+        v3 has no bulk membership endpoint, so this is one search per album and
+        per tag. Run them concurrently: sequentially, a library with a few dozen
+        albums spends its first minute doing nothing but waiting on round-trips.
+        """
+        albums, tags = await asyncio.gather(self.client.list_albums(), self.client.list_tags())
+
+        async def index_album(album_id: str, album_name: str) -> None:
+            async with self.semaphore:
+                asset_ids = await self.client.search_asset_ids(album_id=album_id)
+            for asset_id in asset_ids:
+                self.asset_albums.setdefault(asset_id, []).append(album_name)
+
+        async def index_tag(tag_id: str, tag_value: str) -> None:
+            async with self.semaphore:
+                asset_ids = await self.client.search_asset_ids(tag_id=tag_id)
+            for asset_id in asset_ids:
+                self.asset_tags.setdefault(asset_id, set()).add(tag_value)
+
+        await asyncio.gather(
+            *(index_album(a.id, a.album_name) for a in albums),
+            *(index_tag(t.id, t.value) for t in tags),
+        )
+        self.progress.note(f"Indexed {len(albums)} album(s) and {len(tags)} tag(s). Exporting…")
 
     def meta_for(self, asset: Asset) -> _AssetMeta:
         return _AssetMeta.build(
@@ -149,31 +176,42 @@ class _Runner:
         manifest.append(entry)
         self.index[entry.asset_id] = entry
         self.report.exported += 1
+        self.progress.exported()
+
+    def skip(self) -> None:
+        self.report.skipped += 1
+        self.progress.skipped()
 
 
-async def run_export(cfg: ExportConfig) -> ExportReport:
+async def run_export(cfg: ExportConfig, *, progress: Progress | None = None) -> ExportReport:
     cfg.validate()
     report = ExportReport(server=cfg.server, mode=str(cfg.mode))
     _prepare_output(cfg)
+    tracker = progress if progress is not None else Progress(enabled=False)
 
-    async with ImmichClient(cfg.server, cfg.api_key) as client:
-        about = await client.check_connection()
-        report.server_version = about.version
-        runner = _Runner(cfg, client, report)
-        await runner.load_memberships()
+    with tracker:
+        async with ImmichClient(cfg.server, cfg.api_key) as client:
+            about = await client.check_connection()
+            report.server_version = about.version
+            tracker.note(f"Connected to Immich {about.version} at {cfg.server}.")
+            runner = _Runner(cfg, client, report, tracker)
+            await runner.load_memberships()
 
-        visibilities = list(DEFAULT_VISIBILITIES) + (
-            ["hidden", "locked"] if cfg.include_hidden else []
-        )
-        with ManifestWriter(runner.manifest_path) as manifest:
-            async for page in client.iter_assets(taken_after=cfg.since, visibilities=visibilities):
-                await asyncio.gather(*(_export_one(runner, manifest, asset) for asset in page))
+            visibilities = list(DEFAULT_VISIBILITIES) + (
+                ["hidden", "locked"] if cfg.include_hidden else []
+            )
+            with ManifestWriter(runner.manifest_path) as manifest:
+                async for page in client.iter_assets(
+                    taken_after=cfg.since, visibilities=visibilities
+                ):
+                    await asyncio.gather(*(_export_one(runner, manifest, asset) for asset in page))
 
-        _build_views(cfg, runner, report)
-        report.finish()
-        rows = write_csv(runner.manifest_path, cfg.out / MANIFEST_CSV)
-        logger.debug("manifest.csv rewritten with %d rows", rows)
-        report.write(cfg.out / REPORT_FILE)
+            tracker.close()
+            _build_views(cfg, runner, report)
+            report.finish()
+            rows = write_csv(runner.manifest_path, cfg.out / MANIFEST_CSV)
+            logger.debug("manifest.csv rewritten with %d rows", rows)
+            report.write(cfg.out / REPORT_FILE)
     return report
 
 
@@ -198,9 +236,11 @@ async def _export_one(runner: _Runner, manifest: ManifestWriter, asset: Asset) -
         raise  # disk full / server gone: abort the whole run
     except ImmichExportError as exc:
         runner.report.record_error(f"{asset.original_file_name} ({asset.id})", str(exc))
+        runner.progress.failed()
     except Exception as exc:  # best-effort: one bad asset never kills the run
         logger.debug("asset %s failed", asset.id, exc_info=True)
         runner.report.record_error(f"{asset.original_file_name} ({asset.id})", repr(exc))
+        runner.progress.failed()
 
 
 async def _place_asset(runner: _Runner, manifest: ManifestWriter, asset: Asset) -> None:
@@ -218,7 +258,7 @@ async def _place_asset(runner: _Runner, manifest: ManifestWriter, asset: Asset) 
         rel_path = located.relative_to(cfg.library_root).as_posix()
         sidecar_exists = located.with_name(located.name + ".xmp").is_file()
         if entry is not None and meta.matches(entry) and sidecar_exists:
-            report.skipped += 1
+            runner.skip()
             return
         if cfg.write_sidecars:
             write_sidecar(asset, meta.albums, located)
@@ -228,7 +268,7 @@ async def _place_asset(runner: _Runner, manifest: ManifestWriter, asset: Asset) 
     # self-contained mode
     if entry is not None and entry.checksum == asset.checksum and (cfg.out / entry.path).is_file():
         if meta.matches(entry):
-            report.skipped += 1
+            runner.skip()
             return
         # file unchanged, metadata changed → refresh sidecar + manifest only
         if cfg.write_sidecars:

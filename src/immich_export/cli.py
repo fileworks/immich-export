@@ -118,8 +118,11 @@ def export(
     )
     try:
         from .exporter import run_export
+        from .progress import Progress
 
-        report = asyncio.run(run_export(cfg))
+        # Under --verbose the debug log is the progress report; a repainting
+        # counter would just fight it for the same lines.
+        report = asyncio.run(run_export(cfg, progress=Progress(enabled=not verbose)))
     except ImmichExportError as exc:
         if verbose:
             traceback.print_exc()

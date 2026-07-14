@@ -65,9 +65,10 @@ Key flags (see `immich-export --help` for all):
 
 - **Read-only against Immich.** Never writes back.
 - **Best-effort.** One bad asset logs an error and the run continues; the report lists every failure.
-- **Idempotent / resumable.** The manifest records each asset's checksum; re-runs download only new or changed files, and refresh sidecars when only metadata (albums/tags/people) changed.
+- **Idempotent / resumable.** The manifest records each asset's checksum; re-runs download only new or changed files, and refresh sidecars when only metadata (albums/tags/people) changed. A run killed mid-write leaves a truncated manifest line — that line is skipped (and reported) on the next run rather than poisoning it, so the assets it covered are simply re-exported.
 - **Verifiable.** Every download is checked against Immich's SHA-1; `manifest.jsonl` lets you diff export-vs-server (or vs. a restore) any time.
 - **Streams.** Assets are paged and downloaded with bounded concurrency — a 100k-asset library never sits in memory.
+- **Never silent.** Progress is reported as it goes: a live counter on a terminal, a line every 500 assets when redirected to a log (cron), and nothing at all under `--verbose`, where the debug log takes over.
 
 ## Exit codes
 
