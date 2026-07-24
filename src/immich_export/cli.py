@@ -14,8 +14,8 @@ from typing import Annotated
 import typer
 
 from . import __version__
-from .config import ExportConfig, ExportMode, SidecarFormat
-from .errors import EXIT_UNEXPECTED, ImmichExportError
+from .config import ExportConfig, ExportMode, SidecarFormat, StaleAssetPolicy
+from .errors import EXIT_PARTIAL, EXIT_UNEXPECTED, ImmichExportError
 
 app = typer.Typer(add_completion=False, context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -75,7 +75,7 @@ def export(
         bool,
         typer.Option(
             "--resume/--no-resume",
-            help="Skip assets already exported with an unchanged checksum (via manifest.jsonl).",
+            help="Use prior state as a migration/resume hint; local bytes are always verified.",
         ),
     ] = True,
     include_hidden: Annotated[
@@ -87,6 +87,13 @@ def export(
         typer.Option("--library-root", help="Storage-Template tree (required for --mode sidecar)."),
     ] = None,
     concurrency: Annotated[int, typer.Option("--concurrency", help="Parallel downloads.")] = 4,
+    stale_assets: Annotated[
+        StaleAssetPolicy,
+        typer.Option(
+            "--stale-assets",
+            help="Preserve absent outputs (keep) or move manifest-owned outputs (quarantine).",
+        ),
+    ] = StaleAssetPolicy.KEEP,
     verbose: Annotated[
         bool, typer.Option("--verbose", "-v", help="Debug logging + full tracebacks.")
     ] = False,
@@ -115,6 +122,7 @@ def export(
         include_hidden=include_hidden,
         library_root=library_root,
         concurrency=concurrency,
+        stale_assets=stale_assets,
     )
     try:
         from .exporter import run_export
@@ -146,6 +154,8 @@ def export(
             f"{len(report.errors)} errors in {report.duration_seconds:.1f}s "
             f"→ {cfg.out} (see export-report.txt)"
         )
+    if report.errors:
+        raise typer.Exit(code=EXIT_PARTIAL)
 
 
 if __name__ == "__main__":

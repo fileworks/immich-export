@@ -22,6 +22,11 @@ class SidecarFormat(StrEnum):
     NONE = "none"
 
 
+class StaleAssetPolicy(StrEnum):
+    KEEP = "keep"
+    QUARANTINE = "quarantine"
+
+
 @dataclass(frozen=True)
 class ExportConfig:
     server: str
@@ -38,6 +43,7 @@ class ExportConfig:
     library_root: Path | None = None
     """Where the existing Storage-Template tree lives (sidecar mode only)."""
     concurrency: int = 4
+    stale_assets: StaleAssetPolicy = StaleAssetPolicy.KEEP
 
     def validate(self) -> None:
         parsed = urlparse(self.server)

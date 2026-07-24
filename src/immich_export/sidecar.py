@@ -11,8 +11,12 @@ Immich identifiers have no standard slot, so they live in a small custom
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
 
+from .errors import OutputError
+from .manifest import AssetState, atomic_write_text
 from .models import Asset
 
 NS = {
@@ -53,45 +57,114 @@ def _bag(parent: ET.Element, qname: str, values: list[str], *, container: str = 
         ET.SubElement(bag, _q("rdf", "li")).text = value
 
 
-def build_xmp(asset: Asset, albums: list[str]) -> str:
+def _state_from_asset(
+    asset: Asset, albums: Iterable[str], extra_tags: Iterable[str] = ()
+) -> AssetState:
+    exif = asset.exif_info
+    return AssetState(
+        asset_id=asset.id,
+        checksum=asset.checksum,
+        path="",
+        file_name=asset.original_file_name,
+        original_path=asset.original_path,
+        taken_at=asset.taken_at,
+        type=str(asset.type),
+        favorite=asset.is_favorite,
+        description=asset.description,
+        albums=sorted(set(albums)),
+        people=sorted({person.name for person in asset.people if person.name}),
+        tags=sorted({tag.value for tag in asset.tags} | set(extra_tags)),
+        latitude=exif.latitude if exif else None,
+        longitude=exif.longitude if exif else None,
+        verified_at=datetime.now(UTC),
+    )
+
+
+def build_xmp(
+    state_or_asset: AssetState | Asset,
+    albums: Iterable[str] = (),
+    *,
+    extra_tags: Iterable[str] = (),
+) -> str:
+    """Build deterministic XMP from the canonical state.
+
+    Accepting an API ``Asset`` is retained for the small public helper surface;
+    the exporter itself always passes ``AssetState`` so indexed tag membership
+    and the manifest can never diverge.
+    """
+    state = (
+        state_or_asset
+        if isinstance(state_or_asset, AssetState)
+        else _state_from_asset(state_or_asset, albums, extra_tags)
+    )
     root = ET.Element(_q("x", "xmpmeta"))
     rdf = ET.SubElement(root, _q("rdf", "RDF"))
     desc = ET.SubElement(rdf, _q("rdf", "Description"), {_q("rdf", "about"): ""})
 
-    _bag(desc, _q("dc", "subject"), [tag.value for tag in asset.tags])
-    _bag(desc, _q("Iptc4xmpExt", "PersonInImage"), [p.name for p in asset.people if p.name])
-    _bag(desc, _q("immich", "Albums"), sorted(albums))
+    _bag(desc, _q("dc", "subject"), state.tags)
+    _bag(desc, _q("Iptc4xmpExt", "PersonInImage"), state.people)
+    _bag(desc, _q("immich", "Albums"), state.albums)
 
-    if asset.description:
+    if state.description:
         prop = ET.SubElement(desc, _q("dc", "description"))
         alt = ET.SubElement(prop, _q("rdf", "Alt"))
         li = ET.SubElement(alt, _q("rdf", "li"))
         li.set("{http://www.w3.org/XML/1998/namespace}lang", "x-default")
-        li.text = asset.description
+        li.text = state.description
 
-    ET.SubElement(desc, _q("photoshop", "DateCreated")).text = asset.taken_at.isoformat()
-    if asset.is_favorite:
+    ET.SubElement(desc, _q("photoshop", "DateCreated")).text = state.taken_at.isoformat()
+    if state.favorite:
         ET.SubElement(desc, _q("xmp", "Rating")).text = "5"
 
-    exif = asset.exif_info
-    if exif is not None and exif.latitude is not None and exif.longitude is not None:
+    if state.latitude is not None and state.longitude is not None:
         ET.SubElement(desc, _q("exif", "GPSLatitude")).text = format_gps(
-            exif.latitude, is_latitude=True
+            state.latitude, is_latitude=True
         )
         ET.SubElement(desc, _q("exif", "GPSLongitude")).text = format_gps(
-            exif.longitude, is_latitude=False
+            state.longitude, is_latitude=False
         )
 
-    ET.SubElement(desc, _q("immich", "AssetId")).text = asset.id
-    ET.SubElement(desc, _q("immich", "Checksum")).text = asset.checksum
+    ET.SubElement(desc, _q("immich", "AssetId")).text = state.asset_id
+    ET.SubElement(desc, _q("immich", "Checksum")).text = state.checksum
 
     ET.indent(root)
     body = ET.tostring(root, encoding="unicode")
     return f'<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>\n{body}\n<?xpacket end="w"?>\n'
 
 
-def write_sidecar(asset: Asset, albums: list[str], media_path: Path) -> Path:
-    """Write `<file>.<ext>.xmp` next to the exported/located media file."""
+def sidecar_matches(state: AssetState, media_path: Path) -> bool:
+    """Return whether the existing XMP is exactly the canonical serialization."""
     sidecar_path = media_path.with_name(media_path.name + ".xmp")
-    sidecar_path.write_text(build_xmp(asset, albums), encoding="utf-8")
+    try:
+        return sidecar_path.read_text(encoding="utf-8") == build_xmp(state)
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise OutputError(f"Cannot validate sidecar {sidecar_path}: {exc}") from exc
+
+
+def write_sidecar(
+    state_or_asset: AssetState | Asset,
+    albums_or_media: Iterable[str] | Path,
+    media_path: Path | None = None,
+) -> Path:
+    """Atomically write and validate ``<media>.xmp``.
+
+    The three-argument form remains compatible with the original helper.
+    """
+    if isinstance(state_or_asset, AssetState):
+        if not isinstance(albums_or_media, Path) or media_path is not None:
+            raise TypeError("write_sidecar(state, media_path) expected")
+        state = state_or_asset
+        target_media = albums_or_media
+    else:
+        if isinstance(albums_or_media, Path) or media_path is None:
+            raise TypeError("write_sidecar(asset, albums, media_path) expected")
+        state = _state_from_asset(state_or_asset, albums_or_media)
+        target_media = media_path
+    sidecar_path = target_media.with_name(target_media.name + ".xmp")
+    body = build_xmp(state)
+    atomic_write_text(sidecar_path, body, operation="write XMP sidecar")
+    if not sidecar_matches(state, target_media):
+        raise OutputError(f"XMP sidecar validation failed after writing {sidecar_path}.")
     return sidecar_path

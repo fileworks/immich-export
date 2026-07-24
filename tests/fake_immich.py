@@ -72,6 +72,40 @@ class FakeImmich:
         self.assets.append(asset)
         self.contents[asset["id"]] = content
 
+    def asset(self, asset_id: str) -> dict[str, Any]:
+        return next(asset for asset in self.assets if asset["id"] == asset_id)
+
+    def change_asset(self, asset_id: str, **wire_fields: Any) -> None:
+        """Change independently selected API response fields."""
+        self.asset(asset_id).update(wire_fields)
+
+    def change_exif(self, asset_id: str, **wire_fields: Any) -> None:
+        exif = self.asset(asset_id).setdefault("exifInfo", {})
+        exif.update(wire_fields)
+
+    def set_content(self, asset_id: str, content: bytes, *, update_checksum: bool = True) -> None:
+        self.contents[asset_id] = content
+        if update_checksum:
+            self.asset(asset_id)["checksum"] = checksum_of(content)
+
+    def remove_asset(self, asset_id: str, *, remove_content: bool = True) -> None:
+        self.assets = [asset for asset in self.assets if asset["id"] != asset_id]
+        if remove_content:
+            self.contents.pop(asset_id, None)
+        for members in (*self.album_members.values(), *self.tag_members.values()):
+            members[:] = [member for member in members if member != asset_id]
+
+    def relocate_asset(self, asset_id: str, original_path: str) -> None:
+        self.asset(asset_id)["originalPath"] = original_path
+
+    def set_album_members(self, album_id: str, asset_ids: list[str]) -> None:
+        self.album_members[album_id] = asset_ids
+        if album_id in self.albums:
+            self.albums[album_id]["assetCount"] = len(asset_ids)
+
+    def set_tag_members(self, tag_id: str, asset_ids: list[str]) -> None:
+        self.tag_members[tag_id] = asset_ids
+
     def add_album(self, album_id: str, name: str, asset_ids: list[str]) -> None:
         self.albums[album_id] = {
             "id": album_id,
