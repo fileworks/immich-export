@@ -1,12 +1,12 @@
 # immich-export
 
-Pull **everything** out of [Immich](https://immich.app) — the files **and** the
-metadata that only lives in its database (albums, people, tags, descriptions,
-favorites, geo) — into a redundant, human-readable local folder tree.
+Export supported originals and metadata from [Immich](https://immich.app) —
+albums, people, tags, descriptions, favorites, and coordinates — into a
+human-readable local folder tree.
 
-This is the media escape hatch that makes "Immich = source of truth"
-reversible: if Immich vanished tomorrow, the export is a plain tree you can
-browse, grep, or import anywhere else.
+The result is useful for inspection, migration, and an additional local copy.
+It is not a replacement for independent, tested backups of Immich and its
+database.
 
 ```
 immich-export/
@@ -14,8 +14,9 @@ immich-export/
   library/2024/03/IMG_1234.jpg.xmp      # sidecar: tags, people, albums, description, geo, favorite
   albums/Japan-2019/IMG_1234.jpg        # → symlink into library/
   people/Anna/IMG_1234.jpg              # → symlink into library/
-  manifest.jsonl                        # one line per asset: id, checksum, path, all metadata
-  manifest.csv                          # the same, human-readable
+  manifest.jsonl                        # append-only verified-state history
+  manifest-current.jsonl                # authoritative current verified set
+  manifest.csv                          # human-readable current projection
   export-report.txt                     # counts, warnings, errors, timing
 ```
 
@@ -42,7 +43,7 @@ export IMMICH_API_KEY=...   # Immich → Account Settings → API Keys
 # full portable export (copies originals)
 immich-export --out ./immich-export
 
-# incremental re-run: only new/changed assets are downloaded
+# verified re-run: local originals are rehashed; only missing/changed bytes download
 immich-export --out ./immich-export
 
 # sidecar mode: you already have the Storage-Template tree mounted —
@@ -62,17 +63,35 @@ Key flags (see `immich-export --help` for all):
 | `--album-view` / `--people-view` | on | build `albums/` and `people/` symlink views |
 | `--sidecars` | `xmp` | `xmp` or `none` |
 | `--since` | — | only assets taken on/after this date |
-| `--resume` | on | skip assets already exported with an unchanged checksum (from `manifest.jsonl`) |
+| `--resume` | on | use prior state as a resume/migration hint; local bytes are still rehashed |
 | `--include-hidden` | off | also export hidden + locked-folder assets |
+| `--stale-assets` | `keep` | keep/report absent outputs or explicitly move owned outputs to `quarantine` |
+| `--concurrency` | `4` | bound concurrent API work, downloads, and local verification |
 
-## Guarantees
+## Verified behavior
 
 - **Read-only against Immich.** Never writes back.
-- **Best-effort.** One bad asset logs an error and the run continues; the report lists every failure.
-- **Idempotent / resumable.** The manifest records each asset's checksum; re-runs download only new or changed files, and refresh sidecars when only metadata (albums/tags/people) changed. A run killed mid-write leaves a truncated manifest line — that line is skipped (and reported) on the next run rather than poisoning it, so the assets it covered are simply re-exported.
-- **Verifiable.** Every download is checked against Immich's SHA-1; `manifest.jsonl` lets you diff export-vs-server (or vs. a restore) any time.
-- **Streams.** Assets are paged and downloaded with bounded concurrency — a 100k-asset library never sits in memory.
-- **Never silent.** Progress is reported as it goes: a live counter on a terminal, a line every 500 assets when redirected to a log (cron), and nothing at all under `--verbose`, where the debug log takes over.
+- **Verified originals.** Downloads are SHA-1 checked before atomic promotion,
+  and existing local originals are rehashed on every run in both modes.
+- **Canonical metadata and XMP.** All persisted/path/XMP fields share one typed
+  state. Missing, malformed, or stale required XMP is atomically refreshed.
+- **History versus current.** `manifest.jsonl` is append-only audit history.
+  `manifest-current.jsonl`, its CSV projection, and generated views contain only
+  assets verified by the latest completed compatible scan.
+- **Partial runs are explicit.** Asset-specific integrity failures are reported,
+  excluded from current state, and return exit code `5`; run-level failures do
+  not replace the prior current snapshot.
+- **Conservative reconciliation.** A compatible full scan removes absent assets
+  from current state and views. Their files remain reported orphans by default.
+  Explicit quarantine moves only manifest-owned outputs; sidecar mode never
+  moves Immich-managed originals.
+- **Bounded work and visible progress.** Assets are paged, concurrent work is
+  bounded, and terminal/log progress remains available.
+
+These checks cover the API fields and files the exporter supports. They cannot
+detect metadata Immich does not expose, storage failures that occur after a
+successful verification, or prove that an export can restore an entire Immich
+installation. Keep separate backups and test restoration procedures.
 
 ## Exit codes
 
@@ -82,6 +101,7 @@ Key flags (see `immich-export --help` for all):
 | 2 | bad configuration or authentication failure |
 | 3 | server unreachable |
 | 4 | output directory unwritable / out of space |
+| 5 | completed partial run with one or more asset failures |
 | 1 | unexpected error (re-run with `--verbose` for the traceback) |
 
 ## Sidecar format
@@ -91,6 +111,10 @@ Standard XMP wherever a standard slot exists — `dc:subject` (tags),
 `exif:GPSLatitude/Longitude`, `xmp:Rating` (favorite → 5) — so digiKam,
 Lightroom and exiftool can read them. Album membership and Immich ids live in a
 custom `immich:` namespace in the same file.
+
+When XMP is enabled, an asset is current only after its canonical sidecar
+matches the manifest state. Exact generated-state validation removes metadata
+that was deleted in Immich rather than retaining stale XMP nodes.
 
 ## Immich API compatibility
 

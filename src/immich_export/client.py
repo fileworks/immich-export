@@ -9,6 +9,7 @@ All network failures are translated into the user-facing error types in
 from __future__ import annotations
 
 import hashlib
+import os
 from collections.abc import AsyncIterator, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -17,7 +18,7 @@ from typing import Any, Self
 
 import httpx
 
-from .errors import AuthError, OutputError, ServerUnreachableError
+from .errors import AssetIntegrityError, AuthError, OutputError, ServerUnreachableError
 from .models import Album, Asset, Person, SearchAssetPage, ServerAbout, Tag
 
 PAGE_SIZE = 1000
@@ -156,13 +157,12 @@ class ImmichClient:
         response = await self._request("GET", "/tags")
         return [Tag.model_validate(item) for item in response.json()]
 
-    async def download_original(self, asset_id: str, dest: Path) -> str:
-        """Stream an original file to `dest`; returns the hex SHA-1 of the bytes written.
+    async def download_original(self, asset_id: str, temporary: Path) -> str:
+        """Stream an original into a caller-owned unique temporary.
 
-        Writes to a `.part` file first and renames on success, so an interrupted
-        run never leaves a truncated file at the final path.
+        The exporter verifies the returned SHA-1 before it atomically promotes
+        this file. This method never writes or replaces the final destination.
         """
-        tmp = dest.with_name(dest.name + ".part")
         sha1 = hashlib.sha1()
         try:
             async with self._http.stream("GET", f"/assets/{asset_id}/original") as response:
@@ -171,19 +171,40 @@ class ImmichClient:
                         "Authentication failed — check your Immich API key "
                         "(--api-key / $IMMICH_API_KEY)."
                     )
-                response.raise_for_status()
-                with tmp.open("wb") as fh:
+                if response.status_code == 404:
+                    raise AssetIntegrityError(
+                        f"Immich no longer serves original bytes for asset {asset_id}."
+                    )
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    raise ServerUnreachableError(
+                        f"Immich at {self._server} answered {response.status_code} "
+                        f"while downloading asset {asset_id}."
+                    ) from exc
+                with temporary.open("xb") as fh:
                     async for chunk in response.aiter_bytes():
                         sha1.update(chunk)
                         fh.write(chunk)
+                    fh.flush()
+                    os.fsync(fh.fileno())
         except httpx.TransportError as exc:
-            tmp.unlink(missing_ok=True)
+            _discard_temporary(temporary)
             raise ServerUnreachableError(
                 f"Cannot reach Immich at {self._server}: {exc}. "
                 "Is the server up and the URL correct?"
             ) from exc
+        except AssetIntegrityError:
+            _discard_temporary(temporary)
+            raise
         except OSError as exc:
-            tmp.unlink(missing_ok=True)
-            raise OutputError(f"Cannot write to {dest}: {exc}") from exc
-        tmp.replace(dest)
+            _discard_temporary(temporary)
+            raise OutputError(f"Cannot write download temporary {temporary}: {exc}") from exc
         return sha1.hexdigest()
+
+
+def _discard_temporary(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as exc:
+        raise OutputError(f"Cannot clean download temporary {path}: {exc}") from exc

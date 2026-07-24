@@ -20,7 +20,7 @@ def _entry(
         albums=["Japan 2019"],
         people=["Anna"],
         tags=["travel/japan"],
-        exported_at=datetime(2026, 7, 6, tzinfo=UTC),
+        verified_at=datetime(2026, 7, 6, tzinfo=UTC),
     )
 
 

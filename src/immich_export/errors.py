@@ -6,6 +6,7 @@ EXIT_UNEXPECTED = 1
 EXIT_CONFIG = 2
 EXIT_UNREACHABLE = 3
 EXIT_OUTPUT = 4
+EXIT_PARTIAL = 5
 
 
 class ImmichExportError(Exception):
@@ -36,3 +37,11 @@ class OutputError(ImmichExportError):
     """Output directory unwritable or out of space."""
 
     exit_code = EXIT_OUTPUT
+
+
+class AssetIntegrityError(ImmichExportError):
+    """One asset cannot be verified; the completed run may continue as partial."""
+
+
+class ChecksumError(AssetIntegrityError):
+    """Immich's checksum is invalid or local/downloaded bytes do not match it."""

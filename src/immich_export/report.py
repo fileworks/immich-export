@@ -4,7 +4,15 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
+
+from .manifest import atomic_write_text
+
+
+class RunOutcome(StrEnum):
+    COMPLETE = "complete"
+    PARTIAL = "partial"
 
 
 @dataclass
@@ -15,6 +23,8 @@ class ExportReport:
     total: int = 0
     exported: int = 0
     skipped: int = 0
+    absent: int = 0
+    quarantined: int = 0
     album_links: int = 0
     people_links: int = 0
     errors: list[tuple[str, str]] = field(default_factory=list)
@@ -28,6 +38,10 @@ class ExportReport:
     def finish(self) -> None:
         self.duration_seconds = time.monotonic() - self.started
 
+    @property
+    def outcome(self) -> RunOutcome:
+        return RunOutcome.PARTIAL if self.errors else RunOutcome.COMPLETE
+
     def render(self) -> str:
         lines = [
             "immich-export report",
@@ -35,9 +49,13 @@ class ExportReport:
             f"server:        {self.server} ({self.server_version})",
             f"mode:          {self.mode}",
             f"assets total:  {self.total}",
+            f"outcome:       {self.outcome}",
             f"exported:      {self.exported}",
-            f"skipped:       {self.skipped} (already up to date)",
-            f"errors:        {len(self.errors)}",
+            f"verified same: {self.skipped}",
+            f"failed:        {len(self.errors)}",
+            f"absent/orphan: {self.absent}",
+            f"quarantined:   {self.quarantined}",
+            f"warnings:      {len(self.warnings)}",
             f"album links:   {self.album_links}",
             f"people links:  {self.people_links}",
             f"duration:      {self.duration_seconds:.1f}s",
@@ -51,4 +69,4 @@ class ExportReport:
         return "\n".join(lines) + "\n"
 
     def write(self, path: Path) -> None:
-        path.write_text(self.render(), encoding="utf-8")
+        atomic_write_text(path, self.render(), operation="write export report")

@@ -1,16 +1,24 @@
 name: release
 on:
-  push:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
     branches: [main]
 
 permissions:
-  contents: write # tag + GitHub Release
-  id-token: write # PyPI Trusted Publishing (OIDC, no token)
+  contents: write
+  id-token: write
 
 jobs:
   release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
-    concurrency: release
+    concurrency:
+      group: release
+      cancel-in-progress: false
     steps:
       # `git push` authenticates with the credentials checkout persists into the
       # remote's extraheader — NOT with the token handed to the semantic-release
@@ -19,37 +27,103 @@ jobs:
       # SEMANTIC_RELEASE_TOKEN is a PAT acting as an org owner, who has one.
       - uses: actions/checkout@v7
         with:
+          ref: main
           fetch-depth: 0
           persist-credentials: true
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - name: Semantic release (version, tag, changelog, GitHub Release)
+      - name: Pin release evaluation to the successful CI SHA
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git fetch origin main --tags
+          git reset --hard "$TESTED_SHA"
+          test "$(git rev-parse HEAD)" = "$TESTED_SHA"
+          test "$(git rev-parse origin/main)" = "$TESTED_SHA"
+
+      - name: Plan semantic release without side effects
+        id: plan
+        uses: python-semantic-release/python-semantic-release@v9
+        with:
+          github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          root_options: --noop
+          build: false
+
+      - name: Prove the selected version is new
+        if: steps.plan.outputs.released == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.plan.outputs.version }}
+          RELEASE_TAG: ${{ steps.plan.outputs.tag }}
+        run: >-
+          python scripts/release_integrity.py preflight
+          --version "$RELEASE_VERSION"
+          --tag "$RELEASE_TAG"
+
+      - name: Remove stale local distributions
+        if: steps.plan.outputs.released == 'true'
+        run: find dist -maxdepth 1 -type f ! -name .gitignore -delete
+
+      - name: Build and stage semantic release locally
+        if: steps.plan.outputs.released == 'true'
         id: semrel
         uses: python-semantic-release/python-semantic-release@v9
         with:
           github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          push: false
+          vcs_release: false
 
-      # No build step here on purpose. python-semantic-release already builds the
-      # sdist + wheel into dist/ via its `build_command` in pyproject.toml. It is
-      # a Docker action running as root, so those files are root-owned; a second
-      # `uv build` as the unprivileged runner user cannot overwrite them and dies
-      # with PermissionError, taking publish and the brew bump down with it.
-      - name: Publish to PyPI (OIDC)
-        if: steps.semrel.outputs.released == 'true'
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Capture the staged release commit
+        if: steps.plan.outputs.released == 'true'
+        id: identity
+        run: printf 'commit=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # The semantic-release action only runs `version` (bump/tag/changelog/Release);
-      # it never runs `publish`, so the GitHub Release was created with no files
-      # attached. Upload the sdist + wheel it already built, so the Release is a
-      # usable artefact on its own and not just a pointer to PyPI.
-      - name: Attach the sdist + wheel to the GitHub Release
-        if: steps.semrel.outputs.released == 'true'
-        run: gh release upload "v${{ steps.semrel.outputs.version }}" dist/* --clobber
+      - name: Verify source, tag, artifacts, and installed CLI identity
+        if: steps.plan.outputs.released == 'true'
+        env:
+          EXPECTED_VERSION: ${{ steps.plan.outputs.version }}
+          RELEASE_VERSION: ${{ steps.semrel.outputs.version }}
+          RELEASE_TAG: ${{ steps.semrel.outputs.tag }}
+          RELEASE_COMMIT: ${{ steps.identity.outputs.commit }}
+        run: >-
+          python scripts/release_integrity.py verify
+          --version "$RELEASE_VERSION"
+          --expected-version "$EXPECTED_VERSION"
+          --tag "$RELEASE_TAG"
+          --commit "$RELEASE_COMMIT"
+
+      - name: Recheck tested parent and publish release commit atomically
+        if: steps.plan.outputs.released == 'true'
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_COMMIT: ${{ steps.identity.outputs.commit }}
+          RELEASE_TAG: ${{ steps.semrel.outputs.tag }}
+        run: |
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$TESTED_SHA"
+          test "$(git rev-parse "$RELEASE_COMMIT^")" = "$TESTED_SHA"
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          git push --atomic origin \
+            "$RELEASE_COMMIT:refs/heads/main" \
+            "refs/tags/$RELEASE_TAG"
+
+      - name: Create GitHub Release with verified distributions
+        if: steps.plan.outputs.released == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.semrel.outputs.tag }}
+        run: >-
+          gh release create "$RELEASE_TAG"
+          dist/*.whl dist/*.tar.gz
+          --verify-tag
+          --title "$RELEASE_TAG"
+          --generate-notes
+
+      - name: Publish verified distributions to PyPI
+        if: steps.plan.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Bump Homebrew formula
-        if: steps.semrel.outputs.released == 'true'
+        if: steps.plan.outputs.released == 'true'
         env:
           GH_TOKEN: ${{ secrets.TAP_DISPATCH_TOKEN }}
           RELEASE_VERSION: ${{ steps.semrel.outputs.version }}
