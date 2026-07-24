@@ -27,7 +27,11 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-*(Not yet published — first release pending; until then: `uv run immich-export` from a checkout.)*
+Version `0.0.3` is published on
+[PyPI](https://pypi.org/project/immich-export/0.0.3/), as a
+[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.0.3),
+and through `fileworks/tap`. Development after that tag remains unreleased
+until the normal release workflow runs.
 
 ## Usage
 
@@ -115,6 +119,10 @@ uv build                                              # sdist + wheel
 Conventional Commits drive releases (`python-semantic-release`): merge to
 `main` → version bump + changelog + GitHub Release + PyPI publish (OIDC) +
 Homebrew formula bump.
+
+For per-clone paths, commands, or preferences, create an ignored
+`CLAUDE.local.md` at the repository root. Do not put credentials or other
+secrets in it.
 
 ## License
 
