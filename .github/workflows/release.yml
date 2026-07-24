@@ -17,7 +17,7 @@ jobs:
       # action below (that one only signs GitHub API calls). The version commit
       # lands on protected `main`, so the pushing identity needs a ruleset bypass:
       # SEMANTIC_RELEASE_TOKEN is a PAT acting as an org owner, who has one.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: true
@@ -50,9 +50,14 @@ jobs:
 
       - name: Bump Homebrew formula
         if: steps.semrel.outputs.released == 'true'
-        run: |
-          gh workflow run bump.yml -R fileworks/homebrew-tap \
-            -f formula=immich-export \
-            -f version=${{ steps.semrel.outputs.version }}
         env:
           GH_TOKEN: ${{ secrets.TAP_DISPATCH_TOKEN }}
+          RELEASE_VERSION: ${{ steps.semrel.outputs.version }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN: ${{ github.run_id }}
+        run: |
+          gh workflow run bump.yml -R fileworks/homebrew-tap \
+            -f "formula=immich-export" \
+            -f "version=$RELEASE_VERSION" \
+            -f "source_repository=$SOURCE_REPOSITORY" \
+            -f "source_run=$SOURCE_RUN"
