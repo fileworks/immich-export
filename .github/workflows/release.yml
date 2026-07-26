@@ -61,7 +61,9 @@ jobs:
 
       - name: Remove stale local distributions
         if: steps.plan.outputs.released == 'true'
-        run: find dist -maxdepth 1 -type f ! -name .gitignore -delete
+        run: |
+          mkdir -p dist
+          find dist -maxdepth 1 -type f ! -name .gitignore -delete
 
       - name: Build and stage semantic release locally
         if: steps.plan.outputs.released == 'true'
