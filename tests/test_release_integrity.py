@@ -93,6 +93,9 @@ def test_release_workflow_is_success_and_exact_sha_gated() -> None:
     assert "workflow_run.head_sha" in workflow
     assert 'test "$(git rev-parse origin/main)" = "$TESTED_SHA"' in workflow
     assert 'test "$(git rev-parse "$RELEASE_COMMIT^")" = "$TESTED_SHA"' in workflow
+    assert workflow.index("mkdir -p dist") < workflow.index(
+        "Build and stage semantic release locally"
+    )
 
 
 def test_release_verifies_before_any_remote_publication() -> None:
