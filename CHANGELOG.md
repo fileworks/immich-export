@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.0.4 (2026-07-26)
+
+### Bug Fixes
+
+- Harden verified export state ([#7](https://github.com/fileworks/immich-export/pull/7),
+  [`ef1941f`](https://github.com/fileworks/immich-export/commit/ef1941f3034cf34bb3a24cd2a9ed2fe0dd062319))
+
+- Verify current media, metadata, sidecars, and views - Gate the next release and include 3f2a592
+  resume/progress
+
+- Make release cleanup checkout-safe ([#8](https://github.com/fileworks/immich-export/pull/8),
+  [`38930be`](https://github.com/fileworks/immich-export/commit/38930be8d82433038f21b356c1c8e0d883ae483f))
+
+- preserve the exact-SHA release gate
+
+
 ## v0.0.3 (2026-07-13)
 
 ### Bug Fixes
