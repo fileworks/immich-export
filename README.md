@@ -1,3 +1,5 @@
+<img src=".github/icon.svg" alt="" width="72" height="72" align="left">
+
 # immich-export
 
 Export supported originals and metadata from [Immich](https://immich.app) —
@@ -20,6 +22,22 @@ immich-export/
   export-report.txt                     # counts, warnings, errors, timing
 ```
 
+## Status
+
+Released **0.0.4** — verified on PyPI, as a GitHub Release, and through
+`fileworks/tap` on 2026-07-26. Development after that tag is unreleased
+until the release workflow runs.
+
+## Overview
+
+`immich-export` reads your Immich library through its API and writes a plain
+folder tree you can open in any file manager: originals, XMP sidecars carrying
+tags, people, albums, descriptions and coordinates, and symlinked album and
+person views. Every run is verifiable and resumable.
+
+It is an escape hatch, not a backup. It gives you a readable copy of what Immich
+holds; it does not replace tested backups of Immich and its database.
+
 ## Install
 
 ```sh
@@ -28,11 +46,22 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-Version `0.0.3` is published on
-[PyPI](https://pypi.org/project/immich-export/0.0.3/), as a
-[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.0.3),
+Version `0.0.4` is published on
+[PyPI](https://pypi.org/project/immich-export/0.0.4/), as a
+[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.0.4),
 and through `fileworks/tap`. Development after that tag remains unreleased
 until the normal release workflow runs.
+
+## Quick start
+
+```sh
+export IMMICH_SERVER=https://immich.local:2283
+export IMMICH_API_KEY=…            # never passed on the command line
+immich-export ~/immich-export
+```
+
+The first run copies originals and writes sidecars. Every later run rehashes
+what is already there and transfers only what changed.
 
 ## Usage
 
@@ -130,6 +159,34 @@ uv run pytest tests/test_contract.py
 
 A removed endpoint or field fails the tests *before* it breaks at runtime.
 
+## Configuration
+
+Everything is configured through environment variables and flags; there is no
+configuration file to keep in sync.
+
+| Variable | Purpose |
+|---|---|
+| `IMMICH_SERVER` | Base URL of your Immich instance |
+| `IMMICH_API_KEY` | API key. Read from the environment only, never from argv |
+| `IMMICH_EXPORT_CONCURRENCY` | Parallel downloads (default: conservative) |
+
+Flags are documented under [Usage](#usage); `--help` is authoritative.
+
+## Troubleshooting
+
+**The run stops with a network error.** Re-run it. The manifest records what was
+verified, so a repeat run resumes rather than restarting.
+
+**A previous run was interrupted and the manifest looks damaged.** Damaged lines
+are skipped and reported; the export continues from the last intact state.
+
+**Nothing is downloaded and the count is zero.** Check that `IMMICH_SERVER`
+points at the API root and that the key has library access — a wrong base URL
+authenticates fine and returns nothing.
+
+**Symlinks fail on the target.** Use `--no-symlinks` for FAT/exFAT and cloud
+folders that cannot represent them.
+
 ## Development
 
 ```sh
@@ -147,6 +204,12 @@ Homebrew formula bump.
 For per-clone paths, commands, or preferences, create an ignored
 `CLAUDE.local.md` at the repository root. Do not put credentials or other
 secrets in it.
+
+## Security
+
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+The API key is read from the environment and never written to disk, a log line,
+or the manifest.
 
 ## License
 
