@@ -13,11 +13,38 @@ from .fake_immich import BASE, FakeImmich
 runner = CliRunner()
 
 
+def _declared_options() -> set[str]:
+    """Every `--option` the CLI actually declares.
+
+    Read from the command tree rather than from `--help`, because the rendered
+    help is Rich's output: it wraps, colours and boxes according to the terminal
+    it thinks it has. Asserting against it made this test a function of the
+    runner's width — it passed at every width locally and failed on CI, where the
+    option names were not present in the rendered text at all.
+
+    The contract being checked is "the README documents the flags that exist",
+    and the declarations are what "exist" means.
+    """
+    import typer.main
+
+    names: set[str] = set()
+
+    def walk(command: object) -> None:
+        for parameter in getattr(command, "params", []):
+            for opt in getattr(parameter, "opts", []) or []:
+                if opt.startswith("--"):
+                    names.add(opt)
+        for sub in getattr(command, "commands", {}).values():
+            walk(sub)
+
+    walk(typer.main.get_command(app))
+    return names
+
+
 def test_documented_commands_flags_and_environment_aliases_match_cli() -> None:
     readme = (Path(__file__).parents[1] / "README.md").read_text(encoding="utf-8")
-    help_result = runner.invoke(app, ["--help"], env={"COLUMNS": "240"})
+    declared = _declared_options()
 
-    assert help_result.exit_code == 0
     for option in (
         "--out",
         "--mode",
@@ -30,7 +57,7 @@ def test_documented_commands_flags_and_environment_aliases_match_cli() -> None:
         "--history-max-bytes",
         "--log-file",
     ):
-        assert option in help_result.output
+        assert option in declared
         assert option in readme
     assert "immich-export --out ~/immich-export" in readme
     assert "--no-symlinks" not in readme
