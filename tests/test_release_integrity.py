@@ -156,3 +156,23 @@ def test_release_docs_are_bounded_and_preserve_v003_history() -> None:
     assert "not a replacement for independent" in readme
     assert "## v0.0.3 (2026-07-13)" in changelog
     assert "Not yet published" not in readme
+
+
+def test_lock_identities_are_sources_not_distribution_filenames() -> None:
+    # Adding uv.lock to source_versions without adding it here made verify treat
+    # it as a distribution filename, and the 0.1.1 release failed with
+    # "Distribution filenames disagree". Both the working and tagged lock keys
+    # have to be recognised as source identities.
+    script = Path("scripts/release_integrity.py").read_text(encoding="utf-8")
+    source_names = script.split("source_names = {", 1)[1].split("}", 1)[0]
+
+    assert '"uv.lock"' in source_names
+    assert '"tag:uv.lock"' in source_names
+
+
+def test_the_tagged_lock_version_is_inspected() -> None:
+    # The working tree's lock agreeing is not enough: what shipped is the tag.
+    script = Path("scripts/release_integrity.py").read_text(encoding="utf-8")
+
+    assert 'f"{tag}:uv.lock"' in script
+    assert '"tag:uv.lock": lock_version(lock)' in script
