@@ -1,6 +1,53 @@
 # CHANGELOG
 
 
+## v0.1.1 (2026-07-30)
+
+### Bug Fixes
+
+- Refresh uv.lock during release so its version cannot lag
+  ([#10](https://github.com/fileworks/immich-export/pull/10),
+  [`bfa4a98`](https://github.com/fileworks/immich-export/commit/bfa4a98966a2203c4d40ca7f7de91d67f8bbc9d8))
+
+semantic-release rewrites pyproject.toml and __init__.py, but not uv.lock. So 0.1.0 shipped to PyPI
+  with the lock still saying 0.0.4, and the Homebrew bump refused it — correctly — with "uv.lock
+  project version does not match the requested release". The tap is still on 0.0.4 as a result.
+
+Nothing caught it because `source_versions` only compared pyproject.toml and __init__.py. uv.lock is
+  now one of the locations it inspects, so a lagging lock is a disagreement rather than a silence.
+
+`prepare` ports what paperless-export already does and is the reason its 1.1.0 bump succeeded today
+  while this one did not. Only the project's own entry may move: a release is the wrong moment to
+  silently re-resolve dependencies, so if anything else in the lock changed, the refresh is reverted
+  and the release fails.
+
+Also corrects the current lock, which is one line and version-only — verified with
+  `_lock_without_project_version`, which reports the rest of the resolution unchanged.
+
+Uses PROJECT throughout rather than the repeated literal name paperless-export hardcodes.
+
+Co-authored-by: gykonik <gykonik@gmail.com>
+
+- Treat both lock identities as sources, and check the tagged lock
+  ([#11](https://github.com/fileworks/immich-export/pull/11),
+  [`a732c74`](https://github.com/fileworks/immich-export/commit/a732c742446b3ab3dd0c5b0d94a088b48478fc56))
+
+My previous change added uv.lock to `source_versions` but not to `source_names`, the allow-list of
+  keys that are *not* distribution filenames. `verify` therefore read "uv.lock" as an artifact and
+  the 0.1.1 release failed with:
+
+Distribution filenames disagree with 0.1.1: ['immich_export-0.1.1-py3-none-any.whl',
+  'immich_export-0.1.1.tar.gz', 'uv.lock']
+
+The wheel and sdist were correct; the check was wrong.
+
+`tagged_source_versions` now reads the tag's uv.lock as well. The working tree agreeing is not the
+  guarantee that matters — what shipped is the tag, and that is what the Homebrew bump resolves.
+  paperless-export already checked both; this finishes the parity rather than half of it.
+
+Co-authored-by: gykonik <gykonik@gmail.com>
+
+
 ## v0.1.0 (2026-07-30)
 
 ### Features
