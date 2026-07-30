@@ -72,7 +72,7 @@ asyncio_mode = "auto"
 version_toml = ["pyproject.toml:project.version"]
 version_variables = ["src/immich_export/__init__.py:__version__"]
 commit_message = "chore(release): {version} [skip ci]"
-build_command = "python -m pip install uv && uv build"
+build_command = "python -m ensurepip --upgrade && python -m pip install uv && python scripts/release_integrity.py prepare && uv build"
 allow_zero_version = true
 
 [tool.semantic_release.branches.main]

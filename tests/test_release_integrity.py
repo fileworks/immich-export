@@ -66,16 +66,40 @@ def test_artifact_metadata_disagreement_is_detected(tmp_path: Path) -> None:
     assert artifact_versions(dist)[wheel.name] == "0.0.5"
 
 
-def test_source_version_locations_are_both_inspected(tmp_path: Path) -> None:
+def test_every_source_version_location_is_inspected(tmp_path: Path) -> None:
+    # uv.lock is one of them. It was not, and that is exactly how 0.1.0 reached
+    # PyPI with the lock still saying 0.0.4: nothing compared them, so nothing
+    # noticed until the Homebrew bump refused the mismatch.
     (tmp_path / "src/immich_export").mkdir(parents=True)
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "immich-export"\nversion = "0.0.4"\n'
     )
     (tmp_path / "src/immich_export/__init__.py").write_text('__version__ = "0.0.4"\n')
+    (tmp_path / "uv.lock").write_text(
+        'version = 1\n\n[[package]]\nname = "immich-export"\n'
+        'version = "0.0.4"\nsource = { editable = "." }\n'
+    )
+
     assert source_versions(tmp_path) == {
         "pyproject.toml": "0.0.4",
         "__version__": "0.0.4",
+        "uv.lock": "0.0.4",
     }
+
+
+def test_a_lagging_lock_version_is_visible_as_disagreement(tmp_path: Path) -> None:
+    # The shape of the real failure: pyproject moved, the lock did not.
+    (tmp_path / "src/immich_export").mkdir(parents=True)
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "immich-export"\nversion = "0.1.0"\n'
+    )
+    (tmp_path / "src/immich_export/__init__.py").write_text('__version__ = "0.1.0"\n')
+    (tmp_path / "uv.lock").write_text(
+        'version = 1\n\n[[package]]\nname = "immich-export"\n'
+        'version = "0.0.4"\nsource = { editable = "." }\n'
+    )
+
+    assert len(set(source_versions(tmp_path).values())) != 1
 
 
 def test_release_verification_checks_tagged_sources_and_clean_tree() -> None:
