@@ -57,7 +57,7 @@ until the normal release workflow runs.
 ```sh
 export IMMICH_SERVER=https://immich.local:2283
 export IMMICH_API_KEY=…            # never passed on the command line
-immich-export ~/immich-export
+immich-export --out ~/immich-export
 ```
 
 The first run copies originals and writes sidecars. Every later run rehashes
@@ -96,6 +96,11 @@ Key flags (see `immich-export --help` for all):
 | `--include-hidden` | off | also export hidden + locked-folder assets |
 | `--stale-assets` | `keep` | keep/report absent outputs or explicitly move owned outputs to `quarantine` |
 | `--concurrency` | `4` | bound concurrent API work, downloads, and local verification |
+| `--manifest-batch-size` | `128` | verified history records per durable synchronization |
+| `--manifest-flush-interval` | `0.1` | maximum seconds before a partial durable group is synchronized |
+| `--history-max-records` | `100000` | rotate the bounded active history at this record count |
+| `--history-max-bytes` | `134217728` | rotate the active history at this byte count |
+| `--log-file` | `<out>/immich-export.log` | bounded rotating timestamped diagnostics |
 
 ## Verified behavior
 
@@ -104,7 +109,8 @@ Key flags (see `immich-export --help` for all):
   and existing local originals are rehashed on every run in both modes.
 - **Canonical metadata and XMP.** All persisted/path/XMP fields share one typed
   state. Missing, malformed, or stale required XMP is atomically refreshed.
-- **History versus current.** `manifest.jsonl` is append-only audit history.
+- **History versus current.** `manifest.jsonl` is bounded active audit history;
+  digest-linked verified archives live under `manifest-history/`.
   `manifest-current.jsonl`, its CSV projection, and generated views contain only
   assets verified by the latest completed compatible scan.
 - **Partial runs are explicit.** Asset-specific integrity failures are reported,
@@ -169,6 +175,11 @@ configuration file to keep in sync.
 | `IMMICH_SERVER` | Base URL of your Immich instance |
 | `IMMICH_API_KEY` | API key. Read from the environment only, never from argv |
 | `IMMICH_EXPORT_CONCURRENCY` | Parallel downloads (default: conservative) |
+| `IMMICH_EXPORT_MANIFEST_BATCH_SIZE` | Records per durable history group |
+| `IMMICH_EXPORT_MANIFEST_FLUSH_INTERVAL` | Maximum partial-group delay in seconds |
+| `IMMICH_EXPORT_HISTORY_MAX_RECORDS` | Active-history record rotation threshold |
+| `IMMICH_EXPORT_HISTORY_MAX_BYTES` | Active-history byte rotation threshold |
+| `IMMICH_EXPORT_LOG_FILE` | Rotating logfile path |
 
 Flags are documented under [Usage](#usage); `--help` is authoritative.
 
@@ -184,8 +195,10 @@ are skipped and reported; the export continues from the last intact state.
 points at the API root and that the key has library access — a wrong base URL
 authenticates fine and returns nothing.
 
-**Symlinks fail on the target.** Use `--no-symlinks` for FAT/exFAT and cloud
-folders that cannot represent them.
+**Symlinks fail on the target.** Album and people views require symlinks.
+Disable them with `--no-album-view --no-people-view` on FAT/exFAT or cloud
+folders that cannot represent links; the verified primary export remains
+available.
 
 ## Development
 

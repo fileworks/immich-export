@@ -27,6 +27,8 @@ class ExportReport:
     quarantined: int = 0
     album_links: int = 0
     people_links: int = 0
+    durable_assets: int = 0
+    manifest_synchronizations: int = 0
     errors: list[tuple[str, str]] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     started: float = field(default_factory=time.monotonic)
@@ -51,6 +53,8 @@ class ExportReport:
             f"assets total:  {self.total}",
             f"outcome:       {self.outcome}",
             f"exported:      {self.exported}",
+            f"durable:       {self.durable_assets}",
+            f"manifest sync: {self.manifest_synchronizations}",
             f"verified same: {self.skipped}",
             f"failed:        {len(self.errors)}",
             f"absent/orphan: {self.absent}",

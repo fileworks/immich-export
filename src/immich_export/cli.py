@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import importlib.metadata
 import logging
-import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -16,6 +15,7 @@ import typer
 from . import __version__
 from .config import ExportConfig, ExportMode, SidecarFormat, StaleAssetPolicy
 from .errors import EXIT_PARTIAL, EXIT_UNEXPECTED, ImmichExportError
+from .logging_config import configure_logging
 
 app = typer.Typer(add_completion=False, context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -86,7 +86,14 @@ def export(
         Path | None,
         typer.Option("--library-root", help="Storage-Template tree (required for --mode sidecar)."),
     ] = None,
-    concurrency: Annotated[int, typer.Option("--concurrency", help="Parallel downloads.")] = 4,
+    concurrency: Annotated[
+        int,
+        typer.Option(
+            "--concurrency",
+            envvar="IMMICH_EXPORT_CONCURRENCY",
+            help="Parallel downloads and membership requests.",
+        ),
+    ] = 4,
     stale_assets: Annotated[
         StaleAssetPolicy,
         typer.Option(
@@ -94,6 +101,46 @@ def export(
             help="Preserve absent outputs (keep) or move manifest-owned outputs (quarantine).",
         ),
     ] = StaleAssetPolicy.KEEP,
+    manifest_batch_size: Annotated[
+        int,
+        typer.Option(
+            "--manifest-batch-size",
+            envvar="IMMICH_EXPORT_MANIFEST_BATCH_SIZE",
+            help="Verified history records synchronized per durable group.",
+        ),
+    ] = 128,
+    manifest_flush_interval: Annotated[
+        float,
+        typer.Option(
+            "--manifest-flush-interval",
+            envvar="IMMICH_EXPORT_MANIFEST_FLUSH_INTERVAL",
+            help="Maximum seconds before a partial history group is synchronized.",
+        ),
+    ] = 0.1,
+    history_max_records: Annotated[
+        int,
+        typer.Option(
+            "--history-max-records",
+            envvar="IMMICH_EXPORT_HISTORY_MAX_RECORDS",
+            help="Rotate active history at this many records.",
+        ),
+    ] = 100_000,
+    history_max_bytes: Annotated[
+        int,
+        typer.Option(
+            "--history-max-bytes",
+            envvar="IMMICH_EXPORT_HISTORY_MAX_BYTES",
+            help="Rotate active history at this many bytes.",
+        ),
+    ] = 128 * 1024 * 1024,
+    log_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--log-file",
+            envvar="IMMICH_EXPORT_LOG_FILE",
+            help="Rotating logfile (default: <out>/immich-export.log).",
+        ),
+    ] = None,
     verbose: Annotated[
         bool, typer.Option("--verbose", "-v", help="Debug logging + full tracebacks.")
     ] = False,
@@ -103,11 +150,8 @@ def export(
     ] = False,
 ) -> None:
     """Export all Immich assets + metadata into a plain, human-readable folder tree."""
-    logging.basicConfig(
-        level=logging.DEBUG if verbose else logging.INFO,
-        format="%(levelname)s %(name)s: %(message)s" if verbose else "%(message)s",
-        stream=sys.stderr,
-    )
+    logfile = log_file or out / "immich-export.log"
+    logger = logging.getLogger(__name__)
     cfg = ExportConfig(
         server=server,
         api_key=api_key,
@@ -123,20 +167,30 @@ def export(
         library_root=library_root,
         concurrency=concurrency,
         stale_assets=stale_assets,
+        manifest_batch_size=manifest_batch_size,
+        manifest_flush_interval_seconds=manifest_flush_interval,
+        history_max_records=history_max_records,
+        history_max_bytes=history_max_bytes,
     )
     try:
+        configure_logging(
+            logfile,
+            verbose=verbose,
+            secrets=(api_key,),
+        )
+        logger.info("immich-export started; logfile=%s", logfile)
         from .exporter import run_export
         from .progress import Progress
 
-        # Under --verbose the debug log is the progress report; a repainting
-        # counter would just fight it for the same lines.
-        report = asyncio.run(run_export(cfg, progress=Progress(enabled=not verbose)))
+        report = asyncio.run(run_export(cfg, progress=Progress(enabled=True)))
     except ImmichExportError as exc:
+        logger.error("immich-export failed exit_code=%s: %s", exc.exit_code, exc)
         if verbose:
             traceback.print_exc()
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
         raise typer.Exit(code=exc.exit_code) from exc
     except Exception as exc:
+        logger.exception("immich-export failed unexpectedly")
         if verbose:
             traceback.print_exc()
         typer.secho(
@@ -155,7 +209,18 @@ def export(
             f"→ {cfg.out} (see export-report.txt)"
         )
     if report.errors:
+        logger.error(
+            "immich-export completed outcome=partial total=%s durable=%s failures=%s",
+            report.total,
+            report.exported,
+            len(report.errors),
+        )
         raise typer.Exit(code=EXIT_PARTIAL)
+    logger.info(
+        "immich-export completed outcome=complete total=%s durable=%s failures=0",
+        report.total,
+        report.exported,
+    )
 
 
 if __name__ == "__main__":

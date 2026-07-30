@@ -21,7 +21,7 @@ from pathlib import Path
 
 PROJECT = "immich-export"
 DISTRIBUTION = "immich_export"
-RELEASED_FLOOR = "0.0.3"
+RELEASED_FLOOR = "0.0.4"
 SEMVER = re.compile(
     r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
     r"(?P<suffix>-(?:0|[1-9]\d*|[0-9A-Za-z-][0-9A-Za-z.-]*))?$"

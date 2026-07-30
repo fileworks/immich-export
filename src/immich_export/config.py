@@ -44,6 +44,10 @@ class ExportConfig:
     """Where the existing Storage-Template tree lives (sidecar mode only)."""
     concurrency: int = 4
     stale_assets: StaleAssetPolicy = StaleAssetPolicy.KEEP
+    manifest_batch_size: int = 128
+    manifest_flush_interval_seconds: float = 0.1
+    history_max_records: int = 100_000
+    history_max_bytes: int = 128 * 1024 * 1024
 
     def validate(self) -> None:
         parsed = urlparse(self.server)
@@ -65,3 +69,9 @@ class ExportConfig:
                 raise ConfigError(f"--library-root {self.library_root} is not a directory.")
         if self.concurrency < 1:
             raise ConfigError("--concurrency must be at least 1.")
+        if self.manifest_batch_size < 1:
+            raise ConfigError("--manifest-batch-size must be at least 1.")
+        if self.manifest_flush_interval_seconds <= 0:
+            raise ConfigError("--manifest-flush-interval must be positive.")
+        if self.history_max_records < 1 or self.history_max_bytes < 1:
+            raise ConfigError("History rotation thresholds must be positive.")

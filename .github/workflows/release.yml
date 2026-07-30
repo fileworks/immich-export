@@ -132,9 +132,14 @@ jobs:
           RELEASE_VERSION: ${{ steps.semrel.outputs.version }}
           SOURCE_REPOSITORY: ${{ github.repository }}
           SOURCE_RUN: ${{ github.run_id }}
+          RELEASE_COMMIT: ${{ steps.identity.outputs.commit }}
         run: |
+          lock_url="https://raw.githubusercontent.com/$SOURCE_REPOSITORY/$RELEASE_COMMIT/uv.lock"
+          lock_sha256="$(shasum -a 256 uv.lock | cut -d ' ' -f 1)"
           gh workflow run bump.yml -R fileworks/homebrew-tap \
             -f "formula=immich-export" \
             -f "version=$RELEASE_VERSION" \
             -f "source_repository=$SOURCE_REPOSITORY" \
-            -f "source_run=$SOURCE_RUN"
+            -f "source_run=$SOURCE_RUN" \
+            -f "lock_url=$lock_url" \
+            -f "lock_sha256=$lock_sha256"
