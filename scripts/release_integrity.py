@@ -259,6 +259,12 @@ def tagged_source_versions(tag: str) -> dict[str, str]:
         capture_output=True,
         text=True,
     ).stdout
+    lock = subprocess.run(
+        ["git", "show", f"{tag}:uv.lock"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
     pyproject_version = str(tomllib.loads(pyproject.decode())["project"]["version"])
     match = re.search(r'^__version__\s*=\s*"([^"]+)"', init_text, re.MULTILINE)
     if match is None:
@@ -266,6 +272,7 @@ def tagged_source_versions(tag: str) -> dict[str, str]:
     return {
         "tag:pyproject.toml": pyproject_version,
         "tag:__version__": match.group(1),
+        "tag:uv.lock": lock_version(lock),
     }
 
 
@@ -341,8 +348,10 @@ def verify(
     source_names = {
         "pyproject.toml",
         "__version__",
+        "uv.lock",
         "tag:pyproject.toml",
         "tag:__version__",
+        "tag:uv.lock",
     }
     actual_names = {name for name in identities if name not in source_names}
     expected_names = {
