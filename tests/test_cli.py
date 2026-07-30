@@ -31,7 +31,11 @@ def _declared_options() -> set[str]:
 
     def walk(command: object) -> None:
         for parameter in getattr(command, "params", []):
-            for opt in getattr(parameter, "opts", []) or []:
+            # `secondary_opts` too: a boolean flag declares its negative form
+            # (`--no-symlinks`) there rather than in `opts`.
+            for opt in (getattr(parameter, "opts", []) or []) + (
+                getattr(parameter, "secondary_opts", []) or []
+            ):
                 if opt.startswith("--"):
                     names.add(opt)
         for sub in getattr(command, "commands", {}).values():
