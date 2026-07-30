@@ -1,3 +1,5 @@
+<img src=".github/icon.svg" alt="" width="72" height="72" align="left">
+
 # immich-export
 
 Export supported originals and metadata from [Immich](https://immich.app) —
@@ -20,6 +22,22 @@ immich-export/
   export-report.txt                     # counts, warnings, errors, timing
 ```
 
+## Status
+
+Released **0.0.4** — verified on PyPI, as a GitHub Release, and through
+`fileworks/tap` on 2026-07-26. Development after that tag is unreleased
+until the release workflow runs.
+
+## Overview
+
+`immich-export` reads your Immich library through its API and writes a plain
+folder tree you can open in any file manager: originals, XMP sidecars carrying
+tags, people, albums, descriptions and coordinates, and symlinked album and
+person views. Every run is verifiable and resumable.
+
+It is an escape hatch, not a backup. It gives you a readable copy of what Immich
+holds; it does not replace tested backups of Immich and its database.
+
 ## Install
 
 ```sh
@@ -28,11 +46,22 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-Version `0.0.3` is published on
-[PyPI](https://pypi.org/project/immich-export/0.0.3/), as a
-[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.0.3),
+Version `0.0.4` is published on
+[PyPI](https://pypi.org/project/immich-export/0.0.4/), as a
+[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.0.4),
 and through `fileworks/tap`. Development after that tag remains unreleased
 until the normal release workflow runs.
+
+## Quick start
+
+```sh
+export IMMICH_SERVER=https://immich.local:2283
+export IMMICH_API_KEY=…            # never passed on the command line
+immich-export --out ~/immich-export
+```
+
+The first run copies originals and writes sidecars. Every later run rehashes
+what is already there and transfers only what changed.
 
 ## Usage
 
@@ -67,6 +96,11 @@ Key flags (see `immich-export --help` for all):
 | `--include-hidden` | off | also export hidden + locked-folder assets |
 | `--stale-assets` | `keep` | keep/report absent outputs or explicitly move owned outputs to `quarantine` |
 | `--concurrency` | `4` | bound concurrent API work, downloads, and local verification |
+| `--manifest-batch-size` | `128` | verified history records per durable synchronization |
+| `--manifest-flush-interval` | `0.1` | maximum seconds before a partial durable group is synchronized |
+| `--history-max-records` | `100000` | rotate the bounded active history at this record count |
+| `--history-max-bytes` | `134217728` | rotate the active history at this byte count |
+| `--log-file` | `<out>/immich-export.log` | bounded rotating timestamped diagnostics |
 
 ## Verified behavior
 
@@ -75,7 +109,8 @@ Key flags (see `immich-export --help` for all):
   and existing local originals are rehashed on every run in both modes.
 - **Canonical metadata and XMP.** All persisted/path/XMP fields share one typed
   state. Missing, malformed, or stale required XMP is atomically refreshed.
-- **History versus current.** `manifest.jsonl` is append-only audit history.
+- **History versus current.** `manifest.jsonl` is bounded active audit history;
+  digest-linked verified archives live under `manifest-history/`.
   `manifest-current.jsonl`, its CSV projection, and generated views contain only
   assets verified by the latest completed compatible scan.
 - **Partial runs are explicit.** Asset-specific integrity failures are reported,
@@ -130,6 +165,41 @@ uv run pytest tests/test_contract.py
 
 A removed endpoint or field fails the tests *before* it breaks at runtime.
 
+## Configuration
+
+Everything is configured through environment variables and flags; there is no
+configuration file to keep in sync.
+
+| Variable | Purpose |
+|---|---|
+| `IMMICH_SERVER` | Base URL of your Immich instance |
+| `IMMICH_API_KEY` | API key. Read from the environment only, never from argv |
+| `IMMICH_EXPORT_CONCURRENCY` | Parallel downloads (default: conservative) |
+| `IMMICH_EXPORT_MANIFEST_BATCH_SIZE` | Records per durable history group |
+| `IMMICH_EXPORT_MANIFEST_FLUSH_INTERVAL` | Maximum partial-group delay in seconds |
+| `IMMICH_EXPORT_HISTORY_MAX_RECORDS` | Active-history record rotation threshold |
+| `IMMICH_EXPORT_HISTORY_MAX_BYTES` | Active-history byte rotation threshold |
+| `IMMICH_EXPORT_LOG_FILE` | Rotating logfile path |
+
+Flags are documented under [Usage](#usage); `--help` is authoritative.
+
+## Troubleshooting
+
+**The run stops with a network error.** Re-run it. The manifest records what was
+verified, so a repeat run resumes rather than restarting.
+
+**A previous run was interrupted and the manifest looks damaged.** Damaged lines
+are skipped and reported; the export continues from the last intact state.
+
+**Nothing is downloaded and the count is zero.** Check that `IMMICH_SERVER`
+points at the API root and that the key has library access — a wrong base URL
+authenticates fine and returns nothing.
+
+**Symlinks fail on the target.** Album and people views require symlinks.
+Disable them with `--no-album-view --no-people-view` on FAT/exFAT or cloud
+folders that cannot represent links; the verified primary export remains
+available.
+
 ## Development
 
 ```sh
@@ -147,6 +217,12 @@ Homebrew formula bump.
 For per-clone paths, commands, or preferences, create an ignored
 `CLAUDE.local.md` at the repository root. Do not put credentials or other
 secrets in it.
+
+## Security
+
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+The API key is read from the environment and never written to disk, a log line,
+or the manifest.
 
 ## License
 

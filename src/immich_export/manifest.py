@@ -219,7 +219,7 @@ def write_current(snapshot_path: Path, entries: Mapping[str, AssetState]) -> int
 
 
 class ManifestWriter:
-    """Durable append-only history writer."""
+    """Single-owner append-only history writer with one sync per committed group."""
 
     def __init__(self, manifest_path: Path) -> None:
         self._path = manifest_path
@@ -228,14 +228,25 @@ class ManifestWriter:
             self._fh = manifest_path.open("a", encoding="utf-8")
         except OSError as exc:
             raise OutputError(f"Cannot open export history {manifest_path}: {exc}") from exc
+        self.synchronizations = 0
 
     def append(self, entry: AssetState) -> None:
+        self.append_batch((entry,))
+
+    def append_batch(self, entries: Iterable[AssetState]) -> int:
+        """Append and synchronize one group, returning its durable record count."""
+        rendered = "".join(entry.to_json_line() for entry in entries)
+        if not rendered:
+            return 0
         try:
-            self._fh.write(entry.to_json_line())
+            self._fh.write(rendered)
             self._fh.flush()
             os.fsync(self._fh.fileno())
         except OSError as exc:
             raise OutputError(f"Cannot append export history {self._path}: {exc}") from exc
+        count = rendered.count("\n")
+        self.synchronizations += 1
+        return count
 
     def close(self) -> None:
         try:

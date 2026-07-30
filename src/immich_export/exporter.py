@@ -14,6 +14,7 @@ from uuid import uuid4
 
 from .client import DEFAULT_VISIBILITIES, ImmichClient
 from .config import ExportConfig, ExportMode, StaleAssetPolicy
+from .durable_manifest import DurableManifestQueue
 from .errors import (
     AssetIntegrityError,
     AuthError,
@@ -21,6 +22,7 @@ from .errors import (
     OutputError,
     ServerUnreachableError,
 )
+from .history import recover_history_rotation, rotate_history
 from .layout import compute_relative_path, disambiguate
 from .manifest import (
     AssetState,
@@ -149,23 +151,36 @@ class _Runner:
 
     async def load_memberships(self) -> None:
         albums, tags = await asyncio.gather(self.client.list_albums(), self.client.list_tags())
-
-        async def index_album(album_id: str, album_name: str) -> None:
-            async with self.semaphore:
-                asset_ids = await self.client.search_asset_ids(album_id=album_id)
-            for asset_id in asset_ids:
-                self.asset_albums.setdefault(asset_id, []).append(album_name)
-
-        async def index_tag(tag_id: str, tag_value: str) -> None:
-            async with self.semaphore:
-                asset_ids = await self.client.search_asset_ids(tag_id=tag_id)
-            for asset_id in asset_ids:
-                self.asset_tags.setdefault(asset_id, set()).add(tag_value)
-
-        await asyncio.gather(
-            *(index_album(album.id, album.album_name) for album in albums),
-            *(index_tag(tag.id, tag.value) for tag in tags),
+        job_count = len(albums) + len(tags)
+        queue: asyncio.Queue[tuple[str, str, str] | None] = asyncio.Queue(
+            maxsize=max(1, self.cfg.concurrency * 2)
         )
+        self.progress.phase("membership", total=job_count)
+
+        async def worker() -> None:
+            while (job := await queue.get()) is not None:
+                kind, identifier, label = job
+                if kind == "album":
+                    asset_ids = await self.client.search_asset_ids(album_id=identifier)
+                    for asset_id in asset_ids:
+                        self.asset_albums.setdefault(asset_id, []).append(label)
+                else:
+                    asset_ids = await self.client.search_asset_ids(tag_id=identifier)
+                    for asset_id in asset_ids:
+                        self.asset_tags.setdefault(asset_id, set()).add(label)
+                self.progress.advanced()
+
+        workers = [
+            asyncio.create_task(worker(), name=f"membership-worker-{index}")
+            for index in range(min(self.cfg.concurrency, max(1, job_count)))
+        ]
+        for album in albums:
+            await queue.put(("album", album.id, album.album_name))
+        for tag in tags:
+            await queue.put(("tag", tag.id, tag.value))
+        for _worker in workers:
+            await queue.put(None)
+        await asyncio.gather(*workers)
         self.progress.note(f"Indexed {len(albums)} album(s) and {len(tags)} tag(s). Exporting…")
 
     def metadata_for(self, asset: Asset) -> _AssetMetadata:
@@ -228,15 +243,15 @@ class _Runner:
                 candidate = base.with_name(f"{base.stem}-{asset_id[:8]}-{sequence}{base.suffix}")
             sequence += 1
 
-    def mark_verified(
-        self, manifest: ManifestWriter, state: AssetState, *, outputs_changed: bool
+    async def mark_verified(
+        self, manifest: DurableManifestQueue, state: AssetState, *, outputs_changed: bool
     ) -> None:
         previous = self.lookup.get(state.asset_id)
         changed = outputs_changed or previous is None or not state.equivalent(previous)
         if changed:
-            manifest.append(state)
+            await manifest.publish(state)
             self.report.exported += 1
-            self.progress.exported()
+            self.progress.exported(durable=True)
         else:
             self.report.skipped += 1
             self.progress.skipped()
@@ -268,25 +283,50 @@ async def run_export(cfg: ExportConfig, *, progress: Progress | None = None) -> 
             about = await client.check_connection()
             report.server_version = about.version
             tracker.note(f"Connected to Immich {about.version} at {cfg.server}.")
+            recover_history_rotation(cfg.out / MANIFEST_JSONL)
             runner = _Runner(cfg, client, report, tracker, visibilities)
             await runner.load_memberships()
 
             with ManifestWriter(runner.manifest_path) as manifest:
-                async for page in client.iter_assets(
-                    taken_after=cfg.since, visibilities=visibilities
-                ):
-                    await asyncio.gather(*(_verify_one(runner, manifest, asset) for asset in page))
+                async with DurableManifestQueue(
+                    manifest,
+                    batch_size=cfg.manifest_batch_size,
+                    flush_interval_seconds=cfg.manifest_flush_interval_seconds,
+                ) as durable_manifest:
+                    tracker.phase("export")
+                    async for page in client.iter_assets(
+                        taken_after=cfg.since, visibilities=visibilities
+                    ):
+                        tracker.advanced(len(page))
+                        tracker.phase("verification", total=len(page))
+                        await asyncio.gather(
+                            *(_verify_one(runner, durable_manifest, asset) for asset in page)
+                        )
+                        tracker.phase("export")
+                report.durable_assets = durable_manifest.durable_count
+                report.manifest_synchronizations = manifest.synchronizations
 
             if runner.authoritative:
                 _reconcile_absent(runner)
-            tracker.close()
+            tracker.phase("publication", total=len(runner.candidate))
             _build_views(cfg, runner, report)
             write_current_csv(runner.candidate, cfg.out / MANIFEST_CSV)
+            rotation = rotate_history(
+                runner.manifest_path,
+                max_records=cfg.history_max_records,
+                max_bytes=cfg.history_max_bytes,
+            )
+            if rotation.rotated:
+                report.warnings.append(
+                    f"Archived {rotation.records} history records in generation "
+                    f"{rotation.generation}."
+                )
             report.finish()
             report.write(cfg.out / REPORT_FILE)
             # Publish authority last. Any earlier run-level/output failure leaves
             # the prior complete current snapshot untouched.
             write_current(runner.current_path, runner.candidate)
+            tracker.advanced(len(runner.candidate))
     return report
 
 
@@ -315,7 +355,7 @@ def _prepare_output(cfg: ExportConfig) -> None:
                 raise OutputError(f"Cannot clean output probe {probe}: {exc}") from exc
 
 
-async def _verify_one(runner: _Runner, manifest: ManifestWriter, asset: Asset) -> None:
+async def _verify_one(runner: _Runner, manifest: DurableManifestQueue, asset: Asset) -> None:
     runner.report.total += 1
     runner.seen.add(asset.id)
     try:
@@ -329,7 +369,7 @@ async def _verify_one(runner: _Runner, manifest: ManifestWriter, asset: Asset) -
         runner.progress.failed()
 
 
-async def _place_asset(runner: _Runner, manifest: ManifestWriter, asset: Asset) -> None:
+async def _place_asset(runner: _Runner, manifest: DurableManifestQueue, asset: Asset) -> None:
     metadata = runner.metadata_for(asset)
     expected = _expected_sha1(metadata.checksum, asset.id)
     if runner.cfg.mode is ExportMode.SIDECAR:
@@ -340,7 +380,7 @@ async def _place_asset(runner: _Runner, manifest: ManifestWriter, asset: Asset) 
 
 async def _place_sidecar_asset(
     runner: _Runner,
-    manifest: ManifestWriter,
+    manifest: DurableManifestQueue,
     asset: Asset,
     metadata: _AssetMetadata,
     expected: str,
@@ -382,12 +422,12 @@ async def _place_sidecar_asset(
                     f"Preserved prior sidecar {old_sidecar} after Immich relocated "
                     f"asset {asset.id}."
                 )
-    runner.mark_verified(manifest, state, outputs_changed=outputs_changed)
+    await runner.mark_verified(manifest, state, outputs_changed=outputs_changed)
 
 
 async def _place_self_contained_asset(
     runner: _Runner,
-    manifest: ManifestWriter,
+    manifest: DurableManifestQueue,
     asset: Asset,
     metadata: _AssetMetadata,
     expected: str,
@@ -426,14 +466,14 @@ async def _place_self_contained_asset(
             elif cfg.write_sidecars and not sidecar_matches(state, desired):
                 write_sidecar(state, desired)
                 outputs_changed = True
-            runner.mark_verified(manifest, state, outputs_changed=outputs_changed)
+            await runner.mark_verified(manifest, state, outputs_changed=outputs_changed)
             return
         runner.report.warnings.append(
             f"{source} no longer matches Immich; attempting a verified replacement."
         )
 
     await _download_verified(runner, state, desired, expected)
-    runner.mark_verified(manifest, state, outputs_changed=True)
+    await runner.mark_verified(manifest, state, outputs_changed=True)
 
 
 def _expected_sha1(encoded: str, asset_id: str) -> str:

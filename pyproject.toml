@@ -24,8 +24,10 @@ dependencies = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/fileworks/immich-export"
 Repository = "https://github.com/fileworks/immich-export"
 Issues = "https://github.com/fileworks/immich-export/issues"
+Changelog = "https://github.com/fileworks/immich-export/blob/main/CHANGELOG.md"
 
 [project.scripts]
 immich-export = "immich_export.cli:app"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 
-from immich_export.progress import LOG_EVERY, Progress
+from immich_export.progress import LOG_EVERY, MAX_RETAINED_EVENTS, Progress
 
 
 class _FakeTty(io.StringIO):
@@ -89,3 +89,34 @@ class TestCloseIsIdempotent:
 
         # Repainting the same text is fine on a TTY; a second line-break is not.
         assert stream.getvalue().count("\n") == 1
+
+
+def test_typed_membership_progress_has_total_rate_elapsed_and_supported_eta() -> None:
+    stream = io.StringIO()
+    progress = Progress(stream)
+    progress.phase("membership", total=10)
+    for _ in range(4):
+        progress.advanced()
+    assert progress.event().eta_seconds is None
+
+    progress.advanced()
+    event = progress.event()
+    assert event.phase == "membership"
+    assert event.current == 5
+    assert event.total == 10
+    assert event.rate >= 0
+    assert event.elapsed >= 0
+    assert event.eta_seconds is not None
+
+
+def test_many_failures_keep_redirected_progress_bounded_and_summary_exact() -> None:
+    stream = io.StringIO()
+    with Progress(stream) as progress:
+        progress.phase("verification", total=10_000)
+        for _ in range(10_000):
+            progress.failed()
+
+    lines = stream.getvalue().splitlines()
+    assert len(lines) <= 25
+    assert "10,000 failed" in lines[-1]
+    assert len(progress.events) <= MAX_RETAINED_EVENTS

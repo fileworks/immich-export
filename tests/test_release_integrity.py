@@ -34,11 +34,11 @@ def _artifacts(dist: Path, version: str) -> None:
 
 
 def test_new_release_must_be_newer_and_match_tag() -> None:
-    require_new_version("0.0.4", "v0.0.4")
+    require_new_version("0.0.5", "v0.0.5")
     with pytest.raises(ReleaseIntegrityError, match="newer"):
-        require_new_version("0.0.3", "v0.0.3")
+        require_new_version("0.0.4", "v0.0.4")
     with pytest.raises(ReleaseIntegrityError, match="does not identify"):
-        require_new_version("0.0.4", "v0.0.5")
+        require_new_version("0.0.5", "v0.0.6")
 
 
 def test_artifacts_require_exactly_one_consistent_wheel_and_sdist(
