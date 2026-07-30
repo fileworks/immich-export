@@ -156,6 +156,82 @@ def artifact_versions(dist: Path) -> dict[str, str]:
     return {wheel[0].name: wheel_version, sdist[0].name: sdist_version}
 
 
+def _editable_lock_package(text: str) -> dict[str, object]:
+    raw = tomllib.loads(text)
+    packages = raw.get("package")
+    if not isinstance(packages, list):
+        raise ReleaseIntegrityError("uv.lock has no package records.")
+    matches = [
+        package
+        for package in packages
+        if isinstance(package, dict)
+        and package.get("name") == PROJECT
+        and package.get("source") == {"editable": "."}
+    ]
+    if len(matches) != 1:
+        raise ReleaseIntegrityError(f"uv.lock must contain exactly one editable {PROJECT} package.")
+    return matches[0]
+
+
+def lock_version(text: str) -> str:
+    version = _editable_lock_package(text).get("version")
+    if not isinstance(version, str):
+        raise ReleaseIntegrityError(f"The editable {PROJECT} lock entry has no version.")
+    return version
+
+
+def _lock_without_project_version(text: str) -> str:
+    blocks = text.split("\n[[package]]\n")
+    matching = [
+        index
+        for index, block in enumerate(blocks)
+        if f'name = "{PROJECT}"' in block and 'source = { editable = "." }' in block
+    ]
+    if len(matching) != 1:
+        raise ReleaseIntegrityError(f"Cannot isolate the editable {PROJECT} lock entry.")
+    index = matching[0]
+    blocks[index], count = re.subn(
+        r'(?m)^version = "[^"]+"$',
+        'version = "<PROJECT_VERSION>"',
+        blocks[index],
+        count=1,
+    )
+    if count != 1:
+        raise ReleaseIntegrityError("Cannot isolate the project version in uv.lock.")
+    return "\n[[package]]\n".join(blocks)
+
+
+def prepare_release(root: Path) -> None:
+    """Refresh and stage only the editable project version in ``uv.lock``.
+
+    semantic-release rewrites pyproject.toml and __init__.py, but not uv.lock,
+    so without this the lock keeps the previous version while everything else
+    moves. 0.1.0 shipped to PyPI that way and the Homebrew bump refused it —
+    correctly — with "uv.lock project version does not match the requested
+    release", leaving the tap stuck on 0.0.4.
+
+    Only the project's own entry may move. A release is the wrong moment to
+    silently re-resolve dependencies, so if anything else in the lock changed
+    the refresh is reverted and the release fails.
+    """
+    lock_path = root / "uv.lock"
+    before = lock_path.read_text(encoding="utf-8")
+    subprocess.run(["uv", "lock", "--refresh-package", PROJECT], cwd=root, check=True)
+    after = lock_path.read_text(encoding="utf-8")
+    if _lock_without_project_version(after) != _lock_without_project_version(before):
+        lock_path.write_text(before, encoding="utf-8")
+        raise ReleaseIntegrityError(
+            "Targeted release lock refresh changed unrelated dependency resolution."
+        )
+    versions = source_versions(root)
+    if len(set(versions.values())) != 1:
+        lock_path.write_text(before, encoding="utf-8")
+        raise ReleaseIntegrityError(
+            f"Release source versions disagree after lock refresh: {json.dumps(versions)}"
+        )
+    subprocess.run(["git", "add", "uv.lock"], cwd=root, check=True)
+
+
 def source_versions(root: Path) -> dict[str, str]:
     with (root / "pyproject.toml").open("rb") as file:
         pyproject_version = str(tomllib.load(file)["project"]["version"])
@@ -163,7 +239,12 @@ def source_versions(root: Path) -> dict[str, str]:
     match = re.search(r'^__version__\s*=\s*"([^"]+)"', init_text, re.MULTILINE)
     if match is None:
         raise ReleaseIntegrityError("Package __version__ could not be read.")
-    return {"pyproject.toml": pyproject_version, "__version__": match.group(1)}
+    lock = (root / "uv.lock").read_text(encoding="utf-8")
+    return {
+        "pyproject.toml": pyproject_version,
+        "__version__": match.group(1),
+        "uv.lock": lock_version(lock),
+    }
 
 
 def tagged_source_versions(tag: str) -> dict[str, str]:
@@ -281,6 +362,8 @@ def verify(
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
+    prepare_parser = subparsers.add_parser("prepare")
+    prepare_parser.add_argument("--root", type=Path, default=Path.cwd())
     preflight_parser = subparsers.add_parser("preflight")
     preflight_parser.add_argument("--version", required=True)
     preflight_parser.add_argument("--tag", required=True)
@@ -299,7 +382,9 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = _parser().parse_args()
     try:
-        if args.command == "preflight":
+        if args.command == "prepare":
+            prepare_release(args.root)
+        elif args.command == "preflight":
             preflight(args.version, args.tag)
         else:
             verify(
