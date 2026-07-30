@@ -1,6 +1,48 @@
 # CHANGELOG
 
 
+## v0.1.0 (2026-07-30)
+
+### Features
+
+- Add durable manifests, run history, and scale budgets
+  ([#9](https://github.com/fileworks/immich-export/pull/9),
+  [`30fe418`](https://github.com/fileworks/immich-export/commit/30fe4180ee3f68d9c6eb6b13e6834f2961cffe7a))
+
+* fix: align release integrity gates
+
+* feat: add durable manifests, run history, and scale budgets
+
+An interrupted export left a truncated manifest line that made every later run crash, which broke
+  the resume the manifest exists to provide. The durable manifest writes atomically and reads past
+  damaged lines, reporting them instead of dying on them.
+
+Adds a run history so a repeated export can say what changed since the last one, structured logging
+  with a configured level rather than bare prints, and recorded performance budgets with a test that
+  fails when a run exceeds them.
+
+Owned by the `scale-immich-export-observability` OpenSpec change.
+
+* test: check documented flags against declarations, not rendered help
+
+The test asserted each option appeared in `--help` output, which is Rich's render: it wraps, colours
+  and boxes to the terminal it thinks it has. That made the assertion a function of the runner's
+  width. It passed at every width locally and failed on CI, where the option names were not in the
+  rendered text at all.
+
+The contract is "the README documents the flags that exist", so it now reads the command tree. Same
+  coverage, no dependency on how help happens to be drawn.
+
+* test: include a flag's negative form when reading declarations
+
+A boolean flag declares `--symlinks` in `opts` and `--no-symlinks` in `secondary_opts`, so reading
+  only the former would miss any negative form the README documents.
+
+---------
+
+Co-authored-by: gykonik <gykonik@gmail.com>
+
+
 ## v0.0.4 (2026-07-26)
 
 ### Bug Fixes
