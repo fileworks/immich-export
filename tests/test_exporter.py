@@ -194,3 +194,17 @@ def test_locate_original_strips_server_prefixes(tmp_path: Path) -> None:
     assert locate_original(tmp_path, "upload/library/admin/2024/03/IMG.jpg") == target
     assert locate_original(tmp_path, "/upload/library/admin/2024/03/IMG.jpg") == target
     assert locate_original(tmp_path, "upload/library/admin/2024/03/MISSING.jpg") is None
+
+
+def test_locate_original_rejects_symlinked_ancestor_and_leaf(tmp_path: Path) -> None:
+    library = tmp_path / "library"
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    target = outside / "IMG.jpg"
+    target.write_bytes(b"x")
+    library.mkdir()
+    (library / "linked-directory").symlink_to(outside, target_is_directory=True)
+    (library / "linked-file.jpg").symlink_to(target)
+
+    assert locate_original(library, "upload/library/admin/linked-directory/IMG.jpg") is None
+    assert locate_original(library, "upload/library/admin/linked-file.jpg") is None

@@ -1,5 +1,10 @@
 name: ci
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 0"
 
 jobs:
   quality:
@@ -120,3 +125,16 @@ jobs:
           /tmp/package-check/bin/pip install --quiet "$wheel"
           # The console script must exist and answer, from the wheel alone.
           /tmp/package-check/bin/${{ github.event.repository.name }} --version
+
+  scheduled-scale:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: scheduled-scale-500k
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9.0.0
+      - run: uv sync --locked --all-extras --dev
+      - name: Execute real disk-backed reconcile and publication at 500k assets
+        env:
+          IMMICH_EXPORT_SCALE_ASSETS: "500000"
+        run: uv run pytest -q tests/test_scale_budgets.py

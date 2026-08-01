@@ -27,6 +27,13 @@ class _RedactingFilter(logging.Filter):
         return True
 
 
+class _ExcludeProgressConsole(logging.Filter):
+    """Progress already owns the concise terminal renderer."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.name != "immich_export.progress"
+
+
 def configure_logging(log_file: Path, *, verbose: bool, secrets: tuple[str, ...]) -> None:
     _secrets.update(secret for secret in secrets if secret)
     try:
@@ -46,6 +53,7 @@ def configure_logging(log_file: Path, *, verbose: bool, secrets: tuple[str, ...]
         logging.Formatter("%(levelname)s %(name)s: %(message)s" if verbose else "%(message)s")
     )
     console.addFilter(redactor)
+    console.addFilter(_ExcludeProgressConsole())
 
     try:
         logfile = RotatingFileHandler(

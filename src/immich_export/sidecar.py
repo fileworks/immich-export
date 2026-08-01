@@ -147,6 +147,8 @@ def write_sidecar(
     state_or_asset: AssetState | Asset,
     albums_or_media: Iterable[str] | Path,
     media_path: Path | None = None,
+    *,
+    boundary: Path | None = None,
 ) -> Path:
     """Atomically write and validate ``<media>.xmp``.
 
@@ -163,8 +165,30 @@ def write_sidecar(
         state = _state_from_asset(state_or_asset, albums_or_media)
         target_media = media_path
     sidecar_path = target_media.with_name(target_media.name + ".xmp")
+    if boundary is not None:
+        _assert_confined_target(sidecar_path, boundary)
     body = build_xmp(state)
-    atomic_write_text(sidecar_path, body, operation="write XMP sidecar")
+    atomic_write_text(
+        sidecar_path,
+        body,
+        operation="write XMP sidecar",
+        boundary=boundary,
+    )
     if not sidecar_matches(state, target_media):
         raise OutputError(f"XMP sidecar validation failed after writing {sidecar_path}.")
     return sidecar_path
+
+
+def _assert_confined_target(path: Path, boundary: Path) -> None:
+    """Reject symlinked ancestors/leaves immediately before publication."""
+    try:
+        root = boundary.resolve(strict=True)
+        relative = path.relative_to(boundary)
+        path.parent.resolve(strict=True).relative_to(root)
+    except (OSError, ValueError) as exc:
+        raise OutputError(f"Refusing sidecar path outside the configured root: {path}.") from exc
+    current = boundary
+    for component in relative.parts:
+        current = current / component
+        if current.is_symlink():
+            raise OutputError(f"Refusing symlinked sidecar path: {path}.")

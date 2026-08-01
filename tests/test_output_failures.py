@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TextIO, cast
 
 import pytest
 from typer.testing import CliRunner
@@ -168,10 +169,22 @@ async def test_derived_output_failure_keeps_prior_current_and_atomic_file(
             raise OutputError(f"injected {operation} failure at {path}")
         original_atomic(path, content, operation=operation)
 
+    original_stream = manifest_module.atomic_write_stream
+
+    def fail_selected_stream(
+        path: Path,
+        write: Callable[[TextIO], object],
+        *,
+        operation: str,
+    ) -> None:
+        if operation == failed_operation:
+            raise OutputError(f"injected {operation} failure at {path}")
+        original_stream(path, write, operation=operation)
+
     if failed_operation == "write export report":
         monkeypatch.setattr(report_module, "atomic_write_text", fail_selected)
     else:
-        monkeypatch.setattr(manifest_module, "atomic_write_text", fail_selected)
+        monkeypatch.setattr(manifest_module, "atomic_write_stream", fail_selected_stream)
     with pytest.raises(OutputError, match=failed_operation):
         await run_export(base_config)
 
