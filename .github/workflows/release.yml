@@ -6,8 +6,11 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release-integrity:
@@ -17,9 +20,13 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
-    concurrency:
-      group: release
-      cancel-in-progress: false
+    permissions:
+      contents: write
+    outputs:
+      released: ${{ steps.plan.outputs.released }}
+      version: ${{ steps.semrel.outputs.version }}
+      tag: ${{ steps.semrel.outputs.tag }}
+      commit: ${{ steps.identity.outputs.commit }}
     steps:
       # `git push` authenticates with the credentials checkout persists into the
       # remote's extraheader — NOT with the token handed to the semantic-release
@@ -109,11 +116,34 @@ jobs:
             "$RELEASE_COMMIT:refs/heads/main" \
             "refs/tags/$RELEASE_TAG"
 
-      - name: Create GitHub Release with verified distributions
+      - name: Upload verified distributions
         if: steps.plan.outputs.released == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  github-release:
+    name: publish GitHub Release
+    needs: release-integrity
+    if: needs.release-integrity.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    environment: github-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-distributions
+          path: dist
+      - name: Create GitHub Release with verified distributions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ steps.semrel.outputs.tag }}
+          RELEASE_TAG: ${{ needs.release-integrity.outputs.tag }}
         run: >-
           gh release create "$RELEASE_TAG"
           dist/*.whl dist/*.tar.gz
@@ -121,18 +151,42 @@ jobs:
           --title "$RELEASE_TAG"
           --generate-notes
 
+  pypi:
+    name: publish PyPI distributions
+    needs: [release-integrity, github-release]
+    if: needs.release-integrity.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-distributions
+          path: dist
       - name: Publish verified distributions to PyPI
-        if: steps.plan.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
 
+  homebrew:
+    name: dispatch Homebrew formula update
+    needs: [release-integrity, pypi]
+    if: needs.release-integrity.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    environment: homebrew
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-integrity.outputs.commit }}
       - name: Bump Homebrew formula
-        if: steps.plan.outputs.released == 'true'
         env:
           GH_TOKEN: ${{ secrets.TAP_DISPATCH_TOKEN }}
-          RELEASE_VERSION: ${{ steps.semrel.outputs.version }}
+          RELEASE_VERSION: ${{ needs.release-integrity.outputs.version }}
           SOURCE_REPOSITORY: ${{ github.repository }}
           SOURCE_RUN: ${{ github.run_id }}
-          RELEASE_COMMIT: ${{ steps.identity.outputs.commit }}
+          RELEASE_COMMIT: ${{ needs.release-integrity.outputs.commit }}
         run: |
           lock_url="https://raw.githubusercontent.com/$SOURCE_REPOSITORY/$RELEASE_COMMIT/uv.lock"
           lock_sha256="$(shasum -a 256 uv.lock | cut -d ' ' -f 1)"
