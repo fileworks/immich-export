@@ -26,8 +26,9 @@ from .history import recover_history_rotation, rotate_history
 from .layout import compute_relative_path, disambiguate
 from .manifest import (
     AssetState,
+    DiskStateMap,
     ManifestWriter,
-    load_current,
+    iter_current,
     load_index,
     write_current,
     write_current_csv,
@@ -48,14 +49,33 @@ REPLACED_DIR = ".immich-export-replaced"
 
 
 def locate_original(library_root: Path, original_path: str) -> Path | None:
-    """Locate a server Storage-Template path beneath a configured local root."""
+    """Locate a regular, non-symlinked Storage-Template path below *library_root*."""
+    try:
+        root = library_root.resolve(strict=True)
+    except OSError:
+        return None
     parts = PurePosixPath(original_path).parts
     if parts and parts[0] == "/":
         parts = parts[1:]
     for start in range(len(parts)):
         candidate = library_root.joinpath(*parts[start:])
-        if candidate.is_file():
-            return candidate
+        try:
+            relative = candidate.relative_to(library_root)
+            current = library_root
+            unsafe = False
+            for part in relative.parts:
+                current = current / part
+                if current.is_symlink():
+                    unsafe = True
+                    break
+            if unsafe:
+                continue
+            resolved = candidate.resolve(strict=True)
+            resolved.relative_to(root)
+        except (OSError, ValueError):
+            continue
+        if resolved.is_file():
+            return resolved
     return None
 
 
@@ -111,16 +131,22 @@ class _Runner:
         self.asset_tags: dict[str, set[str]] = {}
         self.manifest_path = cfg.out / MANIFEST_JSONL
         self.current_path = cfg.out / CURRENT_MANIFEST_JSONL
-        self.history = load_index(self.manifest_path, warnings=report.warnings)
         self.had_current = self.current_path.is_file()
-        self.current = load_current(self.current_path)
+        self.current = DiskStateMap(iter_current(self.current_path))
+        self.history = (
+            DiskStateMap(load_index(self.manifest_path, warnings=report.warnings).values())
+            if not self.current and cfg.resume
+            else DiskStateMap()
+        )
         # History is only a migration hint. Every legacy candidate is verified
         # live before it enters the first authoritative current snapshot.
-        self.lookup = dict(self.current or (self.history if cfg.resume else {}))
+        self.lookup = self.current or (self.history if cfg.resume else {})
         self.authoritative = cfg.since is None and all(
             self._scope_matches(entry) for entry in self.current.values()
         )
-        self.candidate = {} if self.authoritative else dict(self.current)
+        # The file on disk remains authoritative until the final atomic replace,
+        # so a scoped run can safely update the one loaded mapping in place.
+        self.candidate = DiskStateMap() if self.authoritative else self.current.copy()
         if cfg.since is not None:
             report.warnings.append(
                 "Incremental --since scan: merged verified assets without inferring absence."
@@ -137,6 +163,13 @@ class _Runner:
         }
         self.seen: set[str] = set()
         self.semaphore = asyncio.Semaphore(cfg.concurrency)
+
+    def close(self) -> None:
+        """Remove run-local disk-backed state."""
+        for mapping in {
+            id(item): item for item in (self.current, self.history, self.candidate)
+        }.values():
+            mapping.close()
 
     def _scope_matches(self, entry: AssetState) -> bool:
         return (
@@ -174,13 +207,32 @@ class _Runner:
             asyncio.create_task(worker(), name=f"membership-worker-{index}")
             for index in range(min(self.cfg.concurrency, max(1, job_count)))
         ]
-        for album in albums:
-            await queue.put(("album", album.id, album.album_name))
-        for tag in tags:
-            await queue.put(("tag", tag.id, tag.value))
-        for _worker in workers:
-            await queue.put(None)
-        await asyncio.gather(*workers)
+
+        async def produce() -> None:
+            for album in albums:
+                await queue.put(("album", album.id, album.album_name))
+            for tag in tags:
+                await queue.put(("tag", tag.id, tag.value))
+            for _worker in workers:
+                await queue.put(None)
+
+        producer = asyncio.create_task(produce(), name="membership-producer")
+        tasks = [producer, *workers]
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+        failure = next(
+            (
+                task.exception()
+                for task in tasks
+                if task in done and not task.cancelled() and task.exception() is not None
+            ),
+            None,
+        )
+        if failure is not None:
+            for task in pending:
+                task.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+            raise failure
+        await asyncio.gather(*tasks)
         self.progress.note(f"Indexed {len(albums)} album(s) and {len(tags)} tag(s). Exporting…")
 
     def metadata_for(self, asset: Asset) -> _AssetMetadata:
@@ -285,48 +337,51 @@ async def run_export(cfg: ExportConfig, *, progress: Progress | None = None) -> 
             tracker.note(f"Connected to Immich {about.version} at {cfg.server}.")
             recover_history_rotation(cfg.out / MANIFEST_JSONL)
             runner = _Runner(cfg, client, report, tracker, visibilities)
-            await runner.load_memberships()
+            try:
+                await runner.load_memberships()
 
-            with ManifestWriter(runner.manifest_path) as manifest:
-                async with DurableManifestQueue(
-                    manifest,
-                    batch_size=cfg.manifest_batch_size,
-                    flush_interval_seconds=cfg.manifest_flush_interval_seconds,
-                ) as durable_manifest:
-                    tracker.phase("export")
-                    async for page in client.iter_assets(
-                        taken_after=cfg.since, visibilities=visibilities
-                    ):
-                        tracker.advanced(len(page))
-                        tracker.phase("verification", total=len(page))
-                        await asyncio.gather(
-                            *(_verify_one(runner, durable_manifest, asset) for asset in page)
-                        )
+                with ManifestWriter(runner.manifest_path) as manifest:
+                    async with DurableManifestQueue(
+                        manifest,
+                        batch_size=cfg.manifest_batch_size,
+                        flush_interval_seconds=cfg.manifest_flush_interval_seconds,
+                    ) as durable_manifest:
                         tracker.phase("export")
-                report.durable_assets = durable_manifest.durable_count
-                report.manifest_synchronizations = manifest.synchronizations
+                        async for page in client.iter_assets(
+                            taken_after=cfg.since, visibilities=visibilities
+                        ):
+                            tracker.advanced(len(page))
+                            tracker.phase("verification", total=len(page))
+                            await asyncio.gather(
+                                *(_verify_one(runner, durable_manifest, asset) for asset in page)
+                            )
+                            tracker.phase("export")
+                    report.durable_assets = durable_manifest.durable_count
+                    report.manifest_synchronizations = manifest.synchronizations
 
-            if runner.authoritative:
-                _reconcile_absent(runner)
-            tracker.phase("publication", total=len(runner.candidate))
-            _build_views(cfg, runner, report)
-            write_current_csv(runner.candidate, cfg.out / MANIFEST_CSV)
-            rotation = rotate_history(
-                runner.manifest_path,
-                max_records=cfg.history_max_records,
-                max_bytes=cfg.history_max_bytes,
-            )
-            if rotation.rotated:
-                report.warnings.append(
-                    f"Archived {rotation.records} history records in generation "
-                    f"{rotation.generation}."
+                if runner.authoritative:
+                    _reconcile_absent(runner)
+                tracker.phase("publication", total=len(runner.candidate))
+                _build_views(cfg, runner, report)
+                write_current_csv(runner.candidate, cfg.out / MANIFEST_CSV)
+                rotation = rotate_history(
+                    runner.manifest_path,
+                    max_records=cfg.history_max_records,
+                    max_bytes=cfg.history_max_bytes,
                 )
-            report.finish()
-            report.write(cfg.out / REPORT_FILE)
-            # Publish authority last. Any earlier run-level/output failure leaves
-            # the prior complete current snapshot untouched.
-            write_current(runner.current_path, runner.candidate)
-            tracker.advanced(len(runner.candidate))
+                if rotation.rotated:
+                    report.warnings.append(
+                        f"Archived {rotation.records} history records in generation "
+                        f"{rotation.generation}."
+                    )
+                report.finish()
+                report.write(cfg.out / REPORT_FILE)
+                # Publish authority last. Any earlier run-level/output failure leaves
+                # the prior complete current snapshot untouched.
+                write_current(runner.current_path, runner.candidate)
+                tracker.advanced(len(runner.candidate))
+            finally:
+                runner.close()
     return report
 
 
@@ -399,7 +454,7 @@ async def _place_sidecar_asset(
             f"(expected {expected}, got {actual})."
         )
     try:
-        relative = located.relative_to(cfg.library_root).as_posix()
+        relative = located.relative_to(cfg.library_root.resolve(strict=True)).as_posix()
     except ValueError as exc:
         raise AssetIntegrityError(
             f"Located original {located} escaped {cfg.library_root}."
@@ -407,7 +462,7 @@ async def _place_sidecar_asset(
     state = runner.state_for(asset.id, metadata, relative)
     outputs_changed = False
     if cfg.write_sidecars and not sidecar_matches(state, located):
-        write_sidecar(state, located)
+        write_sidecar(state, located, boundary=cfg.library_root)
         outputs_changed = True
     previous = runner.lookup.get(asset.id)
     if previous is not None and previous.mode == ExportMode.SIDECAR and previous.path != state.path:
@@ -464,7 +519,7 @@ async def _place_self_contained_asset(
                 )
                 outputs_changed = True
             elif cfg.write_sidecars and not sidecar_matches(state, desired):
-                write_sidecar(state, desired)
+                write_sidecar(state, desired, boundary=cfg.out)
                 outputs_changed = True
             await runner.mark_verified(manifest, state, outputs_changed=outputs_changed)
             return
@@ -515,7 +570,7 @@ async def _download_verified(
                 f"Downloaded bytes failed SHA-1 verification (expected {expected}, got {actual})."
             )
         if runner.cfg.write_sidecars:
-            write_sidecar(state, temporary)
+            write_sidecar(state, temporary, boundary=runner.cfg.out)
         _promote_download(runner, state, temporary, destination)
     finally:
         _clean_temporary(temporary)
@@ -540,6 +595,8 @@ def _promote_download(
     media_promoted = False
     sidecar_promoted = False
     try:
+        _assert_confined_mutation(temporary, runner.cfg.out)
+        _assert_confined_mutation(destination, runner.cfg.out)
         if destination.exists() or destination.is_symlink():
             backup_media = _replacement_path(runner, state, destination.name)
             backup_media.parent.mkdir(parents=True, exist_ok=True)
@@ -601,6 +658,8 @@ def _relocate_verified_media(
     sidecar_was_moved = False
     media_was_moved = False
     try:
+        _assert_confined_mutation(source, library_root)
+        _assert_confined_mutation(destination, library_root)
         destination.parent.mkdir(parents=True, exist_ok=True)
         if destination.exists() or destination.is_symlink():
             raise OutputError(
@@ -616,7 +675,7 @@ def _relocate_verified_media(
             if old_sidecar.exists() or old_sidecar.is_symlink():
                 old_sidecar.replace(new_sidecar)
                 sidecar_was_moved = True
-            write_sidecar(state, destination)
+            write_sidecar(state, destination, boundary=library_root.parent)
         _remove_empty_export_dirs(source.parent, boundary=library_root)
     except OutputError as exc:
         rollback_error = _rollback_relocation(
@@ -721,7 +780,17 @@ def _quarantine_owned_outputs(runner: _Runner, entry: AssetState) -> bool:
     completed: list[tuple[Path, Path]] = []
     try:
         for source, target in moves:
+            source_boundary = (
+                runner.cfg.library_root
+                if entry.mode == ExportMode.SIDECAR
+                else runner.cfg.out / LIBRARY_DIR
+            )
+            if source_boundary is None:
+                raise OutputError("Sidecar quarantine requires a configured library root.")
+            _assert_confined_mutation(source, source_boundary)
+            _assert_confined_mutation(target, runner.cfg.out)
             target.parent.mkdir(parents=True, exist_ok=True)
+            _assert_confined_mutation(target, runner.cfg.out)
             source.replace(target)
             completed.append((source, target))
         if entry.mode == ExportMode.SELF_CONTAINED:
@@ -745,6 +814,30 @@ def _quarantine_owned_outputs(runner: _Runner, entry: AssetState) -> bool:
             f"Cannot quarantine managed output {failed_source} to {failed_target}: {exc}.{rollback}"
         ) from exc
     return bool(completed)
+
+
+def _assert_confined_mutation(path: Path, boundary: Path) -> None:
+    """Fail closed when a mutation target has escaped through any symlink."""
+    try:
+        root = boundary.resolve(strict=True)
+        relative = path.relative_to(boundary)
+        current = boundary
+        for component in relative.parts:
+            current = current / component
+            if current.is_symlink():
+                raise OutputError(f"Refusing symlinked mutation path {path}.")
+        existing_parent = path.parent
+        while not existing_parent.exists():
+            if existing_parent == boundary:
+                break
+            existing_parent = existing_parent.parent
+        existing_parent.resolve(strict=True).relative_to(root)
+        if path.exists():
+            path.resolve(strict=True).relative_to(root)
+    except OutputError:
+        raise
+    except (OSError, ValueError) as exc:
+        raise OutputError(f"Refusing mutation outside configured root: {path}.") from exc
 
 
 def _build_views(cfg: ExportConfig, runner: _Runner, report: ExportReport) -> None:

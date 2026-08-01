@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
+from immich_export.errors import OutputError
+from immich_export.manifest import _supports_anchored_replace
 from immich_export.models import Asset
 from immich_export.sidecar import NS, build_xmp, format_gps, write_sidecar
 
@@ -73,3 +78,49 @@ def test_write_sidecar_places_file_next_to_media(tmp_path: Path) -> None:
     sidecar = write_sidecar(_rich_asset(), ["Japan 2019"], media)
     assert sidecar == tmp_path / "IMG_0001.jpg.xmp"
     assert "travel/japan" in sidecar.read_text(encoding="utf-8")
+
+
+@pytest.mark.skipif(
+    not _supports_anchored_replace(),
+    reason="platform has no directory-descriptor replacement support",
+)
+def test_sidecar_ancestor_swap_cannot_write_outside_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    parent = root / "library"
+    outside = tmp_path / "outside"
+    parent.mkdir(parents=True)
+    outside.mkdir()
+    media = parent / "IMG_0001.jpg"
+    media.write_bytes(b"x")
+    parked = root / "parked"
+    original_replace = os.replace
+    swapped = False
+
+    def swap_before_publish(
+        source: str | bytes,
+        destination: str | bytes,
+        *,
+        src_dir_fd: int | None = None,
+        dst_dir_fd: int | None = None,
+    ) -> None:
+        nonlocal swapped
+        if src_dir_fd is not None and not swapped:
+            parent.rename(parked)
+            parent.symlink_to(outside, target_is_directory=True)
+            swapped = True
+        original_replace(
+            source,
+            destination,
+            src_dir_fd=src_dir_fd,
+            dst_dir_fd=dst_dir_fd,
+        )
+
+    monkeypatch.setattr(os, "replace", swap_before_publish)
+    with pytest.raises(OutputError, match="validation failed"):
+        write_sidecar(_rich_asset(), ["Japan 2019"], media, boundary=root)
+
+    assert swapped
+    assert not (outside / "IMG_0001.jpg.xmp").exists()
+    assert (parked / "IMG_0001.jpg.xmp").exists()

@@ -307,8 +307,14 @@ async def test_interrupted_sidecar_replacement_preserves_sidecar_and_current(
     sidecar_before = sidecar.read_bytes()
     fake_immich.change_exif("a1", description="new description")
 
-    def fail_atomic(path: Path, content: str, *, operation: str) -> None:
-        del path, content, operation
+    def fail_atomic(
+        path: Path,
+        content: str,
+        *,
+        operation: str,
+        boundary: Path | None = None,
+    ) -> None:
+        del path, content, operation, boundary
         raise OutputError("injected sidecar interruption")
 
     monkeypatch.setattr(sidecar_module, "atomic_write_text", fail_atomic)

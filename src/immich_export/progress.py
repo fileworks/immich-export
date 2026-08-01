@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import sys
+import threading
 import time
 from collections import deque
 from dataclasses import dataclass
@@ -50,6 +52,7 @@ class Progress:
         self._started = time.monotonic()
         self._phase_started = self._started
         self._last_paint = self._started
+        self._last_log = self._started
         self._exported = 0
         self._skipped = 0
         self._errors = 0
@@ -59,37 +62,45 @@ class Progress:
         self._phase_total: int | None = None
         self._painted = False
         self._closed = False
+        self._lock = threading.RLock()
+        self._stop_heartbeat = threading.Event()
+        self._heartbeat: threading.Thread | None = None
         # Retain enough structured evidence for diagnostics without making
         # progress tracking itself scale with the number of exported assets.
         self.events: deque[ProgressEvent] = deque(maxlen=MAX_RETAINED_EVENTS)
 
     def phase(self, phase: ProgressPhase, *, total: int | None = None) -> None:
-        self._phase = phase
-        self._phase_current = 0
-        self._phase_total = total
-        self._phase_started = time.monotonic()
-        self._paint(force=True)
+        with self._lock:
+            self._phase = phase
+            self._phase_current = 0
+            self._phase_total = total
+            self._phase_started = time.monotonic()
+            self._paint(force=True)
 
     def advanced(self, count: int = 1) -> None:
-        self._phase_current += count
-        self._paint(force=self._phase_current == self._phase_total)
+        with self._lock:
+            self._phase_current += count
+            self._paint(force=self._phase_current == self._phase_total)
 
     def exported(self, *, durable: bool = False) -> None:
-        self._exported += 1
-        self._phase_current += 1
-        if durable:
-            self._durable += 1
-        self._paint(force=False)
+        with self._lock:
+            self._exported += 1
+            self._phase_current += 1
+            if durable:
+                self._durable += 1
+            self._paint(force=False)
 
     def skipped(self) -> None:
-        self._skipped += 1
-        self._phase_current += 1
-        self._paint(force=False)
+        with self._lock:
+            self._skipped += 1
+            self._phase_current += 1
+            self._paint(force=False)
 
     def failed(self) -> None:
-        self._errors += 1
-        self._phase_current += 1
-        self._paint(force=False)
+        with self._lock:
+            self._errors += 1
+            self._phase_current += 1
+            self._paint(force=False)
 
     def event(self) -> ProgressEvent:
         elapsed = max(time.monotonic() - self._phase_started, 1e-6)
@@ -133,12 +144,13 @@ class Progress:
             return
         now = time.monotonic()
         event = self.event()
+        emitted = False
         if self._tty:
-            if not force and now - self._last_paint < _REPAINT_INTERVAL:
-                return
-            self._stream.write(f"\r\033[2K{self._line()}")
-            self._stream.flush()
-            self._painted = True
+            if force or now - self._last_paint >= _REPAINT_INTERVAL:
+                self._stream.write(f"\r\033[2K{self._line()}")
+                self._stream.flush()
+                self._painted = True
+                emitted = True
         elif force or (
             self._phase_current > 0
             and (
@@ -148,6 +160,13 @@ class Progress:
         ):
             self._stream.write(f"{self._line()}\n")
             self._stream.flush()
+            emitted = True
+        if force or now - self._last_log >= LOG_INTERVAL_SECONDS:
+            logging.getLogger("immich_export.progress").info(self._line())
+            self._last_log = now
+            emitted = True
+        if not emitted:
+            return
         self.events.append(event)
         self._last_paint = now
 
@@ -159,22 +178,41 @@ class Progress:
             self._painted = False
         self._stream.write(f"{message}\n")
         self._stream.flush()
+        logging.getLogger("immich_export.progress").info("%s", message)
 
     def close(self) -> None:
-        if self._closed or not self._enabled:
-            return
-        self._closed = True
-        self._phase = "completion"
-        self._phase_current = self._exported + self._skipped + self._errors
-        self._phase_total = self._phase_current
-        self._paint(force=True)
-        if self._tty and self._painted:
-            self._stream.write("\n")
-            self._stream.flush()
-            self._painted = False
+        self._stop_heartbeat.set()
+        if self._heartbeat is not None:
+            self._heartbeat.join(timeout=1.0)
+        with self._lock:
+            if self._closed or not self._enabled:
+                return
+            self._closed = True
+            self._phase = "completion"
+            self._phase_current = self._exported + self._skipped + self._errors
+            self._phase_total = self._phase_current
+            self._paint(force=True)
+            if self._tty and self._painted:
+                self._stream.write("\n")
+                self._stream.flush()
+                self._painted = False
 
     def __enter__(self) -> Self:
+        if self._enabled and self._heartbeat is None:
+            self._heartbeat = threading.Thread(
+                target=self._heartbeat_loop,
+                name="immich-export-progress",
+                daemon=True,
+            )
+            self._heartbeat.start()
         return self
+
+    def _heartbeat_loop(self) -> None:
+        while not self._stop_heartbeat.wait(LOG_INTERVAL_SECONDS):
+            with self._lock:
+                if self._closed:
+                    return
+                self._paint(force=True)
 
     def __exit__(
         self,
