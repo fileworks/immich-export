@@ -214,6 +214,11 @@ Conventional Commits drive releases (`python-semantic-release`): merge to
 `main` → version bump + changelog + GitHub Release + PyPI publish (OIDC) +
 Homebrew formula bump.
 
+Each successful publication is also recorded as a GitHub Deployment in its
+matching protected environment: `github-release`, then `pypi`, then `homebrew`.
+The release itself remains the user-facing version; deployments provide channel
+history and policy enforcement.
+
 For per-clone paths, commands, or preferences, create an ignored
 `CLAUDE.local.md` at the repository root. Do not put credentials or other
 secrets in it.
