@@ -24,7 +24,7 @@ immich-export/
 
 ## Status
 
-Released **0.1.1** — verified on PyPI, as a GitHub Release, and through
+Released **0.2.0** — verified on PyPI, as a GitHub Release, and through
 `fileworks/tap` on 2026-08-01. Development after that tag is unreleased
 until the release workflow runs.
 
@@ -46,9 +46,9 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-Version `0.1.1` is published on
-[PyPI](https://pypi.org/project/immich-export/0.1.1/), as a
-[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.1.1),
+Version `0.2.0` is published on
+[PyPI](https://pypi.org/project/immich-export/0.2.0/), as a
+[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.2.0),
 and through `fileworks/tap`. Development after that tag remains unreleased
 until the normal release workflow runs.
 
