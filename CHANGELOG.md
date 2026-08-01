@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.2.0 (2026-08-01)
+
+### Features
+
+- Harden export confinement and scale state
+  ([#12](https://github.com/fileworks/immich-export/pull/12),
+  [`8b50c0c`](https://github.com/fileworks/immich-export/commit/8b50c0c7d9e9993fd09d44a85d8fc7b332d8d9f8))
+
+
 ## v0.1.1 (2026-07-30)
 
 ### Bug Fixes
