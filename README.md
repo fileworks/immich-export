@@ -114,8 +114,8 @@ Key flags (see `immich-export --help` for all):
   `manifest-current.jsonl`, its CSV projection, and generated views contain only
   assets verified by the latest completed compatible scan.
 - **Partial runs are explicit.** Asset-specific integrity failures are reported,
-  excluded from current state, and return exit code `5`; run-level failures do
-  not replace the prior current snapshot.
+  excluded from current state, and return exit code `1` (`PARTIAL`); run-level
+  failures do not replace the prior current snapshot.
 - **Conservative reconciliation.** A compatible full scan removes absent assets
   from current state and views. Their files remain reported orphans by default.
   Explicit quarantine moves only manifest-owned outputs; sidecar mode never

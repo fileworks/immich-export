@@ -167,7 +167,11 @@ def test_release_docs_are_bounded_and_preserve_v003_history() -> None:
     changelog = Path("CHANGELOG.md").read_text()
     assert "manifest-current.jsonl" in readme
     assert "--stale-assets" in readme
-    assert "exit code `5`" in readme
+    # Was `exit code \`5\``, which pinned a code the tool cannot return: ExitCode
+    # runs 0, 1, 2, 3, 4, 130 and an asset-integrity failure raises PARTIAL. The
+    # assertion outlived the renumbering onto the shared vocabulary and kept the
+    # wrong number in the README by requiring it.
+    assert "exit code `1` (`PARTIAL`)" in readme
     assert "not a replacement for independent" in readme
     assert "## v0.0.3 (2026-07-13)" in changelog
     assert "Not yet published" not in readme
