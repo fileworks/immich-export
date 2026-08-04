@@ -130,8 +130,10 @@ installation. Keep separate backups and test restoration procedures.
 
 ## Exit codes
 
-The same codes mean the same thing in `immich-export`, `paperless-export` and
-`unpacksort`, so one script can drive all three.
+`immich-export`, `paperless-export` and `unpacksort` share one exit-code
+vocabulary, so a script can branch on the code without knowing which tool it
+ran. The class of outcome is the same everywhere; the specific condition is
+this tool's, and the table below is what it means here.
 
 | Code | Name | Meaning |
 |---|---|---|
