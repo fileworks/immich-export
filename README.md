@@ -208,7 +208,7 @@ available.
 ## Development
 
 ```sh
-uv sync --all-extras --dev
+uv sync --locked --all-extras --all-groups
 uv run ruff check . && uv run ruff format --check .   # lint
 uv run mypy                                           # strict types
 uv run pytest                                         # tests (mock Immich API)
