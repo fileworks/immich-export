@@ -20,6 +20,7 @@ from immich_export.config import (
     StaleAssetPolicy,
 )
 from immich_export.errors import OutputError, ServerUnreachableError
+from immich_export.exit_codes import ExitCode
 from immich_export.exporter import run_export
 from immich_export.manifest import load_current
 
@@ -524,7 +525,7 @@ async def test_unexpected_regular_file_blocks_atomic_view_replacement(
     assert current_path.read_bytes() == before
 
 
-def test_cli_returns_partial_exit_five_and_publishes_successes(
+def test_cli_returns_partial_and_publishes_successes(
     fake_immich: FakeImmich, tmp_path: Path
 ) -> None:
     del fake_immich.contents["a2"]
@@ -532,7 +533,7 @@ def test_cli_returns_partial_exit_five_and_publishes_successes(
         app, ["--server", BASE, "--api-key", "k", "--out", str(tmp_path / "out")]
     )
 
-    assert result.exit_code == 5
+    assert result.exit_code == ExitCode.PARTIAL
     assert "1 errors" in result.output
     assert len(load_current(tmp_path / "out/manifest-current.jsonl")) == 4
     assert "outcome:       partial" in (tmp_path / "out/export-report.txt").read_text()
@@ -546,5 +547,5 @@ def test_cli_returns_partial_when_every_asset_fails(
         app, ["--server", BASE, "--api-key", "k", "--out", str(tmp_path / "out")]
     )
 
-    assert result.exit_code == 5
+    assert result.exit_code == ExitCode.PARTIAL
     assert load_current(tmp_path / "out/manifest-current.jsonl") == {}

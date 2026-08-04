@@ -130,14 +130,17 @@ installation. Keep separate backups and test restoration procedures.
 
 ## Exit codes
 
-| Code | Meaning |
-|---|---|
-| 0 | success (including an empty library) |
-| 2 | bad configuration or authentication failure |
-| 3 | server unreachable |
-| 4 | output directory unwritable / out of space |
-| 5 | completed partial run with one or more asset failures |
-| 1 | unexpected error (re-run with `--verbose` for the traceback) |
+The same codes mean the same thing in `immich-export`, `paperless-export` and
+`unpacksort`, so one script can drive all three.
+
+| Code | Name | Meaning |
+|---|---|---|
+| 0 | `SUCCESS` | everything asked for was done |
+| 1 | `PARTIAL` | the run finished with one or more asset failures; successes are published |
+| 2 | `USAGE` | bad flags, paths, or credentials the server rejected — nothing was attempted |
+| 3 | `CONFLICT` | the Immich server is unreachable |
+| 4 | `FATAL` | unexpected failure, or output that could not be written (re-run with `--verbose`) |
+| 130 | `INTERRUPTED` | cancelled by the operator |
 
 ## Sidecar format
 
