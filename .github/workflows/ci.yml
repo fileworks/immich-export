@@ -13,12 +13,19 @@ concurrency:
 
 jobs:
   quality:
+    name: quality (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every version the package classifies. A classifier is a promise, and
+        # a promise no job exercises is the thing this matrix exists to prevent.
+        python: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       # astral-sh/setup-uv v9.0.0
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
-      - run: uv sync --all-extras --dev
+      - run: uv sync --all-extras --dev --python "${{ matrix.python }}"
 
       - name: lint
         run: |
