@@ -22,22 +22,6 @@ immich-export/
   export-report.txt                     # counts, warnings, errors, timing
 ```
 
-## Status
-
-Released **0.2.1** — verified on PyPI, as a GitHub Release, and through
-`fileworks/tap` on 2026-08-04. Development after that tag is unreleased
-until the release workflow runs.
-
-## Overview
-
-`immich-export` reads your Immich library through its API and writes a plain
-folder tree you can open in any file manager: originals, XMP sidecars carrying
-tags, people, albums, descriptions and coordinates, and symlinked album and
-person views. Every run is verifiable and resumable.
-
-It is an escape hatch, not a backup. It gives you a readable copy of what Immich
-holds; it does not replace tested backups of Immich and its database.
-
 ## Install
 
 ```sh
@@ -46,11 +30,10 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-Version `0.2.1` is published on
-[PyPI](https://pypi.org/project/immich-export/0.2.1/), as a
-[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.2.1),
-and through `fileworks/tap`. Development after that tag remains unreleased
-until the normal release workflow runs.
+Released **0.2.1** on
+[PyPI](https://pypi.org/project/immich-export/0.2.1/),
+[GitHub](https://github.com/fileworks/immich-export/releases/tag/v0.2.1), and
+`fileworks/tap` (verified 2026-08-04).
 
 ## Quick start
 
