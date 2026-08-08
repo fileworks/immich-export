@@ -482,8 +482,7 @@ def write_current(snapshot_path: Path, entries: Mapping[str, AssetState]) -> int
 
     def render(stream: TextIO) -> None:
         asset_ids = entries if isinstance(entries, DiskStateMap) else sorted(entries)
-        for asset_id in asset_ids:
-            stream.write(entries[asset_id].to_json_line())
+        stream.writelines(entries[asset_id].to_json_line() for asset_id in asset_ids)
 
     atomic_write_stream(snapshot_path, render, operation="publish current manifest")
     return len(entries)

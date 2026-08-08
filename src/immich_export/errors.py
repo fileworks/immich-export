@@ -2,41 +2,37 @@
 
 from __future__ import annotations
 
-EXIT_UNEXPECTED = 1
-EXIT_CONFIG = 2
-EXIT_UNREACHABLE = 3
-EXIT_OUTPUT = 4
-EXIT_PARTIAL = 5
+from .exit_codes import ExitCode
 
 
 class ImmichExportError(Exception):
     """Base for all errors that should surface as a one-line human message."""
 
-    exit_code: int = EXIT_UNEXPECTED
+    exit_code: int = ExitCode.FATAL
 
 
 class ConfigError(ImmichExportError):
     """Invalid flags, malformed URL, missing required options."""
 
-    exit_code = EXIT_CONFIG
+    exit_code = ExitCode.USAGE
 
 
 class AuthError(ImmichExportError):
     """API key rejected by the server (401/403)."""
 
-    exit_code = EXIT_CONFIG
+    exit_code = ExitCode.USAGE
 
 
 class ServerUnreachableError(ImmichExportError):
     """Connection refused, DNS failure, timeout."""
 
-    exit_code = EXIT_UNREACHABLE
+    exit_code = ExitCode.CONFLICT
 
 
 class OutputError(ImmichExportError):
     """Output directory unwritable or out of space."""
 
-    exit_code = EXIT_OUTPUT
+    exit_code = ExitCode.FATAL
 
 
 class AssetIntegrityError(ImmichExportError):

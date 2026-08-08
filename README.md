@@ -22,22 +22,6 @@ immich-export/
   export-report.txt                     # counts, warnings, errors, timing
 ```
 
-## Status
-
-Released **0.2.0** — verified on PyPI, as a GitHub Release, and through
-`fileworks/tap` on 2026-08-01. Development after that tag is unreleased
-until the release workflow runs.
-
-## Overview
-
-`immich-export` reads your Immich library through its API and writes a plain
-folder tree you can open in any file manager: originals, XMP sidecars carrying
-tags, people, albums, descriptions and coordinates, and symlinked album and
-person views. Every run is verifiable and resumable.
-
-It is an escape hatch, not a backup. It gives you a readable copy of what Immich
-holds; it does not replace tested backups of Immich and its database.
-
 ## Install
 
 ```sh
@@ -46,11 +30,10 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-Version `0.2.0` is published on
-[PyPI](https://pypi.org/project/immich-export/0.2.0/), as a
-[GitHub Release](https://github.com/fileworks/immich-export/releases/tag/v0.2.0),
-and through `fileworks/tap`. Development after that tag remains unreleased
-until the normal release workflow runs.
+Released **0.2.1** on
+[PyPI](https://pypi.org/project/immich-export/0.2.1/),
+[GitHub](https://github.com/fileworks/immich-export/releases/tag/v0.2.1), and
+`fileworks/tap` (verified 2026-08-04).
 
 ## Quick start
 
@@ -114,8 +97,8 @@ Key flags (see `immich-export --help` for all):
   `manifest-current.jsonl`, its CSV projection, and generated views contain only
   assets verified by the latest completed compatible scan.
 - **Partial runs are explicit.** Asset-specific integrity failures are reported,
-  excluded from current state, and return exit code `5`; run-level failures do
-  not replace the prior current snapshot.
+  excluded from current state, and return exit code `1` (`PARTIAL`); run-level
+  failures do not replace the prior current snapshot.
 - **Conservative reconciliation.** A compatible full scan removes absent assets
   from current state and views. Their files remain reported orphans by default.
   Explicit quarantine moves only manifest-owned outputs; sidecar mode never
@@ -130,14 +113,19 @@ installation. Keep separate backups and test restoration procedures.
 
 ## Exit codes
 
-| Code | Meaning |
-|---|---|
-| 0 | success (including an empty library) |
-| 2 | bad configuration or authentication failure |
-| 3 | server unreachable |
-| 4 | output directory unwritable / out of space |
-| 5 | completed partial run with one or more asset failures |
-| 1 | unexpected error (re-run with `--verbose` for the traceback) |
+`immich-export`, `paperless-export` and `unpacksort` share one exit-code
+vocabulary, so a script can branch on the code without knowing which tool it
+ran. The class of outcome is the same everywhere; the specific condition is
+this tool's, and the table below is what it means here.
+
+| Code | Name | Meaning |
+|---|---|---|
+| 0 | `SUCCESS` | everything asked for was done |
+| 1 | `PARTIAL` | the run finished with one or more asset failures; successes are published |
+| 2 | `USAGE` | bad flags, paths, or credentials the server rejected — nothing was attempted |
+| 3 | `CONFLICT` | the Immich server is unreachable |
+| 4 | `FATAL` | unexpected failure, or output that could not be written (re-run with `--verbose`) |
+| 130 | `INTERRUPTED` | cancelled by the operator |
 
 ## Sidecar format
 
@@ -203,7 +191,7 @@ available.
 ## Development
 
 ```sh
-uv sync --all-extras --dev
+uv sync --locked --all-extras --all-groups
 uv run ruff check . && uv run ruff format --check .   # lint
 uv run mypy                                           # strict types
 uv run pytest                                         # tests (mock Immich API)

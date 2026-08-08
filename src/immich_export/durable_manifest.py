@@ -106,7 +106,7 @@ class DurableManifestQueue:
                 committed = self.writer.append_batch(pending.entry for pending in batch)
                 self.durable_count += committed
                 receipt = CommitReceipt(self.durable_count, committed)
-            except BaseException as exc:
+            except BaseException as exc:  # noqa: BLE001 - every waiting producer must learn the writer died, or they hang
                 self._failure = exc
                 for pending in batch:
                     if not pending.acknowledged.done():

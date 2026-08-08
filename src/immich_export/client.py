@@ -129,8 +129,19 @@ class ImmichClient:
     async def _paged_search(self, body: dict[str, Any]) -> AsyncIterator[SearchAssetPage]:
         page_token: str | None = "1"
         while page_token is not None:
+            try:
+                page_number = int(page_token)
+            except ValueError as exc:
+                # `nextPage` is an ordinal in every spec version this client
+                # targets. A server that answers with an opaque cursor is a
+                # contract change, not a crash: say so instead of letting a bare
+                # ValueError end the export mid-way.
+                raise ServerUnreachableError(
+                    f"Immich at {self._server} returned a non-numeric page token "
+                    f"({page_token!r}); this client cannot page that response."
+                ) from exc
             response = await self._request(
-                "POST", "/search/metadata", json={**body, "page": int(page_token)}
+                "POST", "/search/metadata", json={**body, "page": page_number}
             )
             page = SearchAssetPage.model_validate(response.json()["assets"])
             yield page
@@ -193,6 +204,15 @@ class ImmichClient:
             raise ServerUnreachableError(
                 f"Cannot reach Immich at {self._server}: {exc}. "
                 "Is the server up and the URL correct?"
+            ) from exc
+        except httpx.HTTPError as exc:
+            # `DecodingError` is an `HTTPError` but not a `TransportError`, so a
+            # corrupt compressed stream used to escape here and leave the
+            # part-written temporary on disk.
+            _discard_temporary(temporary)
+            raise ServerUnreachableError(
+                f"Immich at {self._server} sent a response that could not be read "
+                f"while downloading asset {asset_id}: {exc}"
             ) from exc
         except AssetIntegrityError:
             _discard_temporary(temporary)

@@ -15,6 +15,7 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: System :: Archiving :: Backup",
 ]
 dependencies = [
@@ -33,12 +34,15 @@ Changelog = "https://github.com/fileworks/immich-export/blob/main/CHANGELOG.md"
 immich-export = "immich_export.cli:app"
 
 [dependency-groups]
+# Pinned like unpacksort: a lint or type-check that changes under you between
+# two runs of the same commit is a gate you cannot trust. Renovate/Dependabot
+# raises these deliberately.
 dev = [
-  "mypy>=1.13",
-  "pytest>=8.3",
-  "pytest-asyncio>=0.24",
-  "respx>=0.22",
-  "ruff>=0.8",
+  "mypy==2.3.0",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "respx==0.23.1",
+  "ruff==0.16.0",
 ]
 
 [build-system]
@@ -51,13 +55,110 @@ packages = ["src/immich_export"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = ["build", "dist"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PTH", "RET", "ARG"]
+# Same rule set as unpacksort: everything, minus a reviewed ignore list.
+select = ["ALL"]
+ignore = [
+  "C901",
+  "COM812",
+  "CPY001",
+  "D203",
+  "D202",
+  "D213",
+  "FBT001",
+  "PERF401",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0917",
+  "TC001",
+  "TC002",
+  "TC003",
+  "TRY300",
+  "TRY301",
+  "UP042",
+  # Message style: these two repos write the message at the `raise`, which
+  # keeps the error readable where it is produced. Adopting the hoist-to-a-
+  # constant form would rewrite every error path in a published tool for no
+  # behaviour change; revisit as its own commit.
+  "TRY003",
+  "EM101",
+  "EM102",
+  # Docstrings on every public symbol were never this codebase's convention;
+  # module and function docstrings carry the explanation instead.
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D107",
+]
 
 [tool.ruff.lint.per-file-ignores]
-# pytest fixtures are frequently used only for their side effect
-"tests/**" = ["ARG001"]
+# Release scripts fetch a fixed, hard-coded https URL to check version
+# uniqueness; the scheme is not caller-controlled.
+"scripts/**" = [
+  "D103",
+  "EM101",
+  "EM102",
+  "EXE001",
+  "PLR2004",
+  "S310",
+  "S603",
+  "S607",
+  "T201",
+  "TRY003",
+]
+"src/**" = [
+  # Deliberate throughout: internal invariants are asserted, long orchestration
+  # functions are single transactions, a few imports are deferred for start-up
+  # cost, and SHA-1 is the digest the upstream API publishes.
+  "PLC0415",
+  "PLR0915",
+  "PLR2004",
+  "S101",
+  "S105",
+  "S324",
+  "S603",
+  "S607",
+  "SLF001",
+  "FBT002",
+  "FBT003",
+  "D301",
+  # `logging.error` with a message the caller already sanitized; the traceback
+  # is logged separately and only under --verbose.
+  "TRY400",
+  # `**kwargs` forwarded verbatim to httpx.
+  "ANN401",
+  "RSE102",
+  "FURB122",
+]
+"tests/**" = [
+  "ANN",
+  "ARG001",
+  "ASYNC240",
+  "D",
+  "DTZ001",
+  "FBT002",
+  "FBT003",
+  "INP001",
+  "PLC0415",
+  "PLR0402",
+  "PLR2004",
+  "PT018",
+  "S101",
+  "S105",
+  "S106",
+  "S314",
+  "S603",
+  "SLF001",
+  "TC006",
+  "S324",
+  "PLW0108",
+]
 
 [tool.mypy]
 python_version = "3.12"

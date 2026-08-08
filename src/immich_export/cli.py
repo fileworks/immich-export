@@ -14,7 +14,8 @@ import typer
 
 from . import __version__
 from .config import ExportConfig, ExportMode, SidecarFormat, StaleAssetPolicy
-from .errors import EXIT_PARTIAL, EXIT_UNEXPECTED, ImmichExportError
+from .errors import ImmichExportError
+from .exit_codes import ExitCode
 from .logging_config import configure_logging
 
 app = typer.Typer(add_completion=False, context_settings={"help_option_names": ["-h", "--help"]})
@@ -183,6 +184,9 @@ def export(
         from .progress import Progress
 
         report = asyncio.run(run_export(cfg, progress=Progress(enabled=True)))
+    except KeyboardInterrupt as exc:
+        typer.secho("Interrupted; nothing was left half-written.", fg=typer.colors.YELLOW, err=True)
+        raise typer.Exit(code=ExitCode.INTERRUPTED) from exc
     except ImmichExportError as exc:
         logger.error("immich-export failed exit_code=%s: %s", exc.exit_code, exc)
         if verbose:
@@ -198,7 +202,7 @@ def export(
             fg=typer.colors.RED,
             err=True,
         )
-        raise typer.Exit(code=EXIT_UNEXPECTED) from exc
+        raise typer.Exit(code=ExitCode.FATAL) from exc
 
     if report.total == 0:
         typer.echo("Immich library is empty — nothing to export (manifest written).")
@@ -215,7 +219,7 @@ def export(
             report.exported,
             len(report.errors),
         )
-        raise typer.Exit(code=EXIT_PARTIAL)
+        raise typer.Exit(code=ExitCode.PARTIAL)
     logger.info(
         "immich-export completed outcome=complete total=%s durable=%s failures=0",
         report.total,

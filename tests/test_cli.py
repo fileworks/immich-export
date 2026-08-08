@@ -7,6 +7,7 @@ import respx
 from typer.testing import CliRunner
 
 from immich_export.cli import app
+from immich_export.exit_codes import ExitCode
 
 from .fake_immich import BASE, FakeImmich
 
@@ -74,19 +75,19 @@ def test_manifest_batch_environment_alias_is_applied(tmp_path: Path) -> None:
         env={"IMMICH_EXPORT_MANIFEST_BATCH_SIZE": "0"},
     )
 
-    assert result.exit_code == 2
+    assert result.exit_code == ExitCode.USAGE
     assert "--manifest-batch-size must be at least 1" in result.output
 
 
 def test_version_flag() -> None:
     result = runner.invoke(app, ["--version"])
-    assert result.exit_code == 0
+    assert result.exit_code == ExitCode.SUCCESS
     assert result.output.startswith("immich-export ")
 
 
 def test_bad_server_url_exits_2(tmp_path: Path) -> None:
     result = runner.invoke(app, ["--server", "not-a-url", "--api-key", "k", "--out", str(tmp_path)])
-    assert result.exit_code == 2
+    assert result.exit_code == ExitCode.USAGE
     assert "http" in result.output
 
 
@@ -94,7 +95,7 @@ def test_auth_failure_exits_2(respx_mock: respx.MockRouter, tmp_path: Path) -> N
     respx_mock.get(f"{BASE}/api/server/ping").respond(json={"res": "pong"})
     respx_mock.get(f"{BASE}/api/server/about").respond(401)
     result = runner.invoke(app, ["--server", BASE, "--api-key", "bad", "--out", str(tmp_path)])
-    assert result.exit_code == 2
+    assert result.exit_code == ExitCode.USAGE
     assert "Authentication failed" in result.output
     assert "Traceback" not in result.output
 
@@ -102,7 +103,7 @@ def test_auth_failure_exits_2(respx_mock: respx.MockRouter, tmp_path: Path) -> N
 def test_unreachable_exits_3(respx_mock: respx.MockRouter, tmp_path: Path) -> None:
     respx_mock.get(f"{BASE}/api/server/ping").mock(side_effect=httpx.ConnectError("refused"))
     result = runner.invoke(app, ["--server", BASE, "--api-key", "k", "--out", str(tmp_path)])
-    assert result.exit_code == 3
+    assert result.exit_code == ExitCode.CONFLICT
     assert "Cannot reach Immich" in result.output
     assert "Traceback" not in result.output
 
@@ -110,7 +111,7 @@ def test_unreachable_exits_3(respx_mock: respx.MockRouter, tmp_path: Path) -> No
 def test_empty_library_exits_0(respx_mock: respx.MockRouter, tmp_path: Path) -> None:
     FakeImmich().install(respx_mock)
     result = runner.invoke(app, ["--server", BASE, "--api-key", "k", "--out", str(tmp_path)])
-    assert result.exit_code == 0
+    assert result.exit_code == ExitCode.SUCCESS
     assert "empty" in result.output
 
 
@@ -123,7 +124,7 @@ def test_verbose_diagnostics_coexist_with_phase_progress(
         ["--server", BASE, "--api-key", "k", "--out", str(tmp_path), "--verbose"],
     )
 
-    assert result.exit_code == 0
+    assert result.exit_code == ExitCode.SUCCESS
     assert "membership:" in result.output
     assert "completion:" in result.output
     assert "DEBUG" in result.output
@@ -134,5 +135,5 @@ def test_successful_run_prints_summary(respx_mock: respx.MockRouter, tmp_path: P
 
     standard_library().install(respx_mock)
     result = runner.invoke(app, ["--server", BASE, "--api-key", "k", "--out", str(tmp_path)])
-    assert result.exit_code == 0
+    assert result.exit_code == ExitCode.SUCCESS
     assert "5 exported" in result.output
