@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title description">
+  <title id="title">immich-export · Fileworks</title>
+  <desc id="description">Export Immich originals and metadata to a readable local library.</desc>
+  <rect width="1280" height="640" fill="#FAF7F2"/>
+  <rect x="72" y="72" width="1136" height="496" rx="32" fill="#FFFFFF" stroke="#E6E3E0" stroke-width="2"/>
+  <svg x="112" y="108" width="128" height="128" viewBox="0 0 32 32" aria-hidden="true">
+    <g fill="none" stroke="#2A251F" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="8.2" width="16.2" height="15.6" rx="2.8"/><path d="M6.8 19.8 11 14.6l3.2 3.7 2-2.2 3.2 3.5"/><circle cx="16.4" cy="12.4" r="1.5"/><path stroke="#E8582A" d="M23.4 16h4.4m-2.2-2.2 2.2 2.2-2.2 2.2"/></g>
+  </svg>
+  <text x="274" y="159" fill="#C2410C" font-family="Geist Sans,system-ui,sans-serif" font-size="24" font-weight="700" letter-spacing="2">FILEWORKS</text>
+  <text x="274" y="220" fill="#14110F" font-family="Geist Sans,system-ui,sans-serif" font-size="52" font-weight="650">immich-export</text>
+  <text x="112" y="354" fill="#221E1C" font-family="Geist Sans,system-ui,sans-serif" font-size="31" font-weight="500">Export Immich originals and metadata to a readable local library.</text>
+  <path d="M112 410H1168" stroke="#E6E3E0" stroke-width="2"/>
+  <g>
+    <text x="112" y="461" fill="#C2410C" font-family="Geist Sans,system-ui,sans-serif" font-size="14" font-weight="700" letter-spacing="1.8">TYPE</text>
+    <text x="112" y="500" fill="#655D58" font-family="Geist Sans,system-ui,sans-serif" font-size="22" font-weight="500">Command-line tool</text>
+    <text x="456" y="461" fill="#C2410C" font-family="Geist Sans,system-ui,sans-serif" font-size="14" font-weight="700" letter-spacing="1.8">INSTALL</text>
+    <text x="456" y="500" fill="#655D58" font-family="Geist Mono,ui-monospace,monospace" font-size="22" font-weight="500">pipx · Homebrew</text>
+    <text x="800" y="461" fill="#C2410C" font-family="Geist Sans,system-ui,sans-serif" font-size="14" font-weight="700" letter-spacing="1.8">SOURCE</text>
+    <text x="800" y="500" fill="#655D58" font-family="Geist Sans,system-ui,sans-serif" font-size="22" font-weight="500">Read-only</text>
+  </g>
+</svg>
