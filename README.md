@@ -205,14 +205,22 @@ uv run pytest                                         # tests (mock Immich API)
 uv build                                              # sdist + wheel
 ```
 
-Conventional Commits drive releases (`python-semantic-release`): merge to
-`main` → version bump + changelog + GitHub Release + PyPI publish (OIDC) +
-Homebrew formula bump.
+Pull requests run linting, strict types, tests, and builds on Python 3.12, 3.13,
+and 3.14, plus documentation links, dependency auditing, and an installed-wheel
+smoke test. Renovate batches routine dependency changes into one Monday PR and
+automerge is enabled; a per-repository concurrency limit of one prevents stacked
+dependency branches or PRs.
 
-Each successful publication is also recorded as a GitHub Deployment in its
-matching protected environment: `github-release`, then `pypi`, then `homebrew`.
-The release itself remains the user-facing version; deployments provide channel
-history and policy enforcement.
+A separate Sunday workflow runs the real disk-backed reconcile and publication
+budget at 500,000 assets, keeping schedule-only work out of pull-request and
+`main` CI checks.
+
+Conventional Commits drive `python-semantic-release`. After CI passes on a
+`main` push, the release workflow pins the tested SHA, verifies the staged
+source, tag, distributions, and installed CLI, then atomically pushes the
+release commit and tag. Publication proceeds through the protected
+`github-release`, `pypi`, and `homebrew` environments in that order; PyPI uses
+trusted publishing and GitHub Releases carry the verified wheel and sdist.
 
 For per-clone paths, commands, or preferences, create an ignored
 `CLAUDE.local.md` at the repository root. Do not put credentials or other

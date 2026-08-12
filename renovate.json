@@ -1,4 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>fileworks/maintenance:renovate-policy"]
+  "extends": ["github>fileworks/maintenance:renovate-policy"],
+  "prConcurrentLimit": 1,
+  "branchConcurrentLimit": 1
 }
