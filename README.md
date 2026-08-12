@@ -2,6 +2,8 @@
 
 # immich-export
 
+## Overview
+
 Export supported originals and metadata from [Immich](https://immich.app) —
 albums, people, tags, descriptions, favorites, and coordinates — into a
 human-readable local folder tree.
@@ -22,6 +24,11 @@ immich-export/
   export-report.txt                     # counts, warnings, errors, timing
 ```
 
+## Status
+
+The latest verified public release is 1.0.0 across GitHub Releases, PyPI, and
+the Fileworks Homebrew tap.
+
 ## Install
 
 ```sh
@@ -30,10 +37,10 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-Released **0.2.1** on
-[PyPI](https://pypi.org/project/immich-export/0.2.1/),
-[GitHub](https://github.com/fileworks/immich-export/releases/tag/v0.2.1), and
-`fileworks/tap` (verified 2026-08-04).
+Released **1.0.0** on
+[PyPI](https://pypi.org/project/immich-export/1.0.0/),
+[GitHub](https://github.com/fileworks/immich-export/releases/tag/v1.0.0), and
+`fileworks/tap` (verified 2026-08-12).
 
 ## Quick start
 
