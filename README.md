@@ -26,8 +26,8 @@ immich-export/
 
 ## Status
 
-The latest verified public release is 1.0.0 across GitHub Releases, PyPI, and
-the Fileworks Homebrew tap.
+The current verified release is listed on GitHub Releases and PyPI; release
+automation updates the Fileworks Homebrew tap from the same tested source.
 
 ## Install
 
@@ -37,10 +37,10 @@ pipx install immich-export
 brew install fileworks/tap/immich-export
 ```
 
-Released **1.0.0** on
-[PyPI](https://pypi.org/project/immich-export/1.0.0/),
-[GitHub](https://github.com/fileworks/immich-export/releases/tag/v1.0.0), and
-`fileworks/tap` (verified 2026-08-12).
+Inspect published versions on
+[PyPI](https://pypi.org/project/immich-export/),
+[GitHub](https://github.com/fileworks/immich-export/releases/latest), and with
+`brew info fileworks/tap/immich-export`.
 
 ## Quick start
 
@@ -207,9 +207,10 @@ uv build                                              # sdist + wheel
 
 Pull requests run linting, strict types, tests, and builds on Python 3.12, 3.13,
 and 3.14, plus documentation links, dependency auditing, and an installed-wheel
-smoke test. Renovate batches routine dependency changes into one Monday PR and
-automerge is enabled; a per-repository concurrency limit of one prevents stacked
-dependency branches or PRs.
+smoke test. Renovate batches routine non-major updates into one Monday
+`fix(deps)` PR and squash-merges it only after every check passes. A concurrency
+limit of one prevents stacked dependency work. Major, replacement, and rollback
+updates require explicit Dependency Dashboard approval and never auto-merge.
 
 A separate Sunday workflow runs the real disk-backed reconcile and publication
 budget at 500,000 assets, keeping schedule-only work out of pull-request and
