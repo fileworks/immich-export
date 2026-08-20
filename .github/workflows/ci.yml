@@ -10,34 +10,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Format, lint, typecheck and test are identical across every Python CLI in
+  # the family, so they are defined once in `maintenance` and called here.
+  # Pinned by commit SHA, never by branch: a moving reference here is a moving
+  # reference into this repository's CI. `docs/` records how to unwire it.
   quality:
     name: quality (Python ${{ matrix.python }})
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # Every version the package classifies. A classifier is a promise, and
         # a promise no job exercises is the thing this matrix exists to prevent.
         python: ["3.12", "3.13", "3.14"]
+    uses: fileworks/maintenance/.github/workflows/reusable-python-quality.yml@8bb3503084a91c8c1342c218d5562375498a30a5
+    with:
+      runs-on: ubuntu-latest
+      python-version: ${{ matrix.python }}
+      sync-mode: all-extras-dev
+      # This repository audits advisories in its own job below, once rather
+      # than once per interpreter.
+      audit: false
+
+  # Stays local: the reusable workflow deliberately cannot publish or package,
+  # and this proves the distributions build on every classified interpreter —
+  # a promise the `package` job checks only on one.
+  build:
+    name: build (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       # astral-sh/setup-uv v9.0.0
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
-      - run: uv sync --all-extras --dev --python "${{ matrix.python }}"
-
-      - name: lint
-        run: |
-          uv run ruff check .
-          uv run ruff format --check .
-
-      - name: typecheck
-        run: uv run mypy
-
-      - name: test
-        run: uv run pytest -q
-
-      - name: build
-        run: uv build
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv build
 
   docs-links:
     name: docs-links
