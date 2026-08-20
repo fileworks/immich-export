@@ -51,7 +51,8 @@ jobs:
 
       - name: Plan semantic release without side effects
         id: plan
-        uses: python-semantic-release/python-semantic-release@v10
+        # python-semantic-release v10.6.1
+        uses: python-semantic-release/python-semantic-release@39dd2052f2ce8282a5d932c31d58a2ca06d2550e
         with:
           github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           no_operation_mode: true
@@ -76,7 +77,8 @@ jobs:
       - name: Build and stage semantic release locally
         if: steps.plan.outputs.released == 'true'
         id: semrel
-        uses: python-semantic-release/python-semantic-release@v10
+        # python-semantic-release v10.6.1
+        uses: python-semantic-release/python-semantic-release@39dd2052f2ce8282a5d932c31d58a2ca06d2550e
         with:
           github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           push: false
@@ -167,7 +169,8 @@ jobs:
           name: python-distributions
           path: dist
       - name: Publish verified distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        # pypa/gh-action-pypi-publish release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
 
   homebrew:
     name: dispatch Homebrew formula update
