@@ -156,9 +156,7 @@ def test_integrity_change_preserves_reviewed_action_generations() -> None:
     release = Path(".github/workflows/release.yml").read_text()
     ci = Path(".github/workflows/ci.yml").read_text()
     assert "actions/checkout@v7" in release
-    assert re.search(
-        r"python-semantic-release/python-semantic-release@[0-9a-f]{40}", release
-    )
+    assert re.search(r"python-semantic-release/python-semantic-release@[0-9a-f]{40}", release)
     assert "no_operation_mode: true" in release
     assert "root_options:" not in release
     assert "GH_REPO: ${{ github.repository }}" in release
