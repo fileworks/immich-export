@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import re
 import tarfile
 import zipfile
 from pathlib import Path
@@ -129,9 +130,10 @@ def test_release_verifies_before_any_remote_publication() -> None:
     verify = workflow.index("release_integrity.py verify")
     push = workflow.index("git push --atomic")
     github_release = workflow.index("gh release create")
-    pypi = workflow.index("pypa/gh-action-pypi-publish@release/v1")
+    pypi = re.search(r"pypa/gh-action-pypi-publish@[0-9a-f]{40}", workflow)
+    assert pypi is not None
     brew = workflow.index("gh workflow run bump.yml")
-    assert preflight < build < verify < push < github_release < pypi < brew
+    assert preflight < build < verify < push < github_release < pypi.start() < brew
     assert "no_operation_mode: true" in workflow
     assert "push: false" in workflow
     assert "vcs_release: false" in workflow
@@ -154,7 +156,9 @@ def test_integrity_change_preserves_reviewed_action_generations() -> None:
     release = Path(".github/workflows/release.yml").read_text()
     ci = Path(".github/workflows/ci.yml").read_text()
     assert "actions/checkout@v7" in release
-    assert "python-semantic-release/python-semantic-release@v10" in release
+    assert re.search(
+        r"python-semantic-release/python-semantic-release@[0-9a-f]{40}", release
+    )
     assert "no_operation_mode: true" in release
     assert "root_options:" not in release
     assert "GH_REPO: ${{ github.repository }}" in release
